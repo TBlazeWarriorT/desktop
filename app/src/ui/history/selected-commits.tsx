@@ -30,10 +30,11 @@ import { FileList } from './file-list'
 import { SeamlessDiffSwitcher } from '../diff/seamless-diff-switcher'
 import {
   MarkdownPreview,
-  isMarkdownFile,
   getMarkdownPreview,
   setMarkdownPreview,
 } from '../diff/markdown-preview'
+import { FileView, getWholeFileView, setWholeFileView } from '../diff/file-view'
+import { getAvailableViewModes, getCurrentViewMode } from '../diff/view-mode'
 import { getDotComAPIEndpoint } from '../../lib/api'
 import { IMenuItem } from '../../lib/menu-item'
 import { IChangesetData } from '../../lib/git'
@@ -103,6 +104,7 @@ interface ISelectedCommitsProps {
 interface ISelectedCommitsState {
   readonly isExpanded: boolean
   readonly markdownPreview: boolean
+  readonly wholeFile: boolean
 }
 
 /** The History component. Contains the commit list, commit summary, and diff. */
@@ -118,6 +120,7 @@ export class SelectedCommits extends React.Component<
     this.state = {
       isExpanded: false,
       markdownPreview: getMarkdownPreview(),
+      wholeFile: getWholeFileView(),
     }
   }
 
@@ -164,7 +167,29 @@ export class SelectedCommits extends React.Component<
       )
     }
 
-    if (this.state.markdownPreview && isMarkdownFile(file.path)) {
+    const mode = getCurrentViewMode(
+      getAvailableViewModes(file.path, file.status, {
+        conflicts: false,
+        file: true,
+        preview: true,
+      }),
+      this.state
+    )
+
+    if (mode === 'file') {
+      return (
+        <div className="diff-container">
+          {this.renderDiffHeader()}
+          <FileView
+            repository={this.props.repository}
+            path={file.path}
+            source={{ kind: 'commit', commitish: file.commitish }}
+          />
+        </div>
+      )
+    }
+
+    if (mode === 'preview') {
       return (
         <div className="diff-container">
           {this.renderDiffHeader()}
@@ -219,6 +244,8 @@ export class SelectedCommits extends React.Component<
         onDiffOptionsOpened={this.props.onDiffOptionsOpened}
         markdownPreview={this.state.markdownPreview}
         onMarkdownPreviewChanged={this.onMarkdownPreviewChanged}
+        wholeFile={this.state.wholeFile}
+        onWholeFileChanged={this.onWholeFileChanged}
       />
     )
   }
@@ -226,6 +253,11 @@ export class SelectedCommits extends React.Component<
   private onMarkdownPreviewChanged = (markdownPreview: boolean) => {
     setMarkdownPreview(markdownPreview)
     this.setState({ markdownPreview })
+  }
+
+  private onWholeFileChanged = (wholeFile: boolean) => {
+    setWholeFileView(wholeFile)
+    this.setState({ wholeFile })
   }
 
   private onMarkdownLinkClicked = (url: string) => {

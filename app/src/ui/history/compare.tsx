@@ -281,6 +281,10 @@ export class CompareSidebar extends React.Component<
     )
   }
 
+  private onBrowseFiles = (sha: string) => {
+    this.props.dispatcher.browseFiles(this.props.repository, sha)
+  }
+
   private onFilePathCleared = () => {
     this.props.dispatcher.setHistoryFilePath(this.props.repository, null)
   }
@@ -420,6 +424,7 @@ export class CompareSidebar extends React.Component<
         preferAbsoluteDates={this.props.preferAbsoluteDates}
         searchMatches={search?.searchMatches}
         conflictWarnings={this.state.conflictWarnings}
+        onBrowseFiles={this.onBrowseFiles}
       />
     )
   }

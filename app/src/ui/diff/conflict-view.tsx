@@ -1,34 +1,25 @@
 import * as React from 'react'
-import * as Path from 'path'
 import classNames from 'classnames'
-import {
-  AutoSizer,
-  CellMeasurer,
-  CellMeasurerCache,
-  List,
-  ListRowProps,
-} from 'react-virtualized'
 import { Repository } from '../../models/repository'
 import { WorkingDirectoryFileChange } from '../../models/status'
 import { IDiff } from '../../models/diff'
 import { ITokens } from '../../lib/highlighter/types'
-import { highlight } from '../../lib/highlighter/worker'
-import { readPartialFile } from '../../lib/file-system'
-import { getRathenaHighlightContext } from '../../lib/rathena/context'
 import {
   ConflictLineKind,
   IConflictRegion,
   findConflicts,
   getConflictLineKinds,
 } from '../../lib/conflict-markers'
-import { syntaxHighlightLine } from './diff-helpers'
+import {
+  WholeFileLines,
+  highlightWholeFile,
+  loadWholeFile,
+} from './whole-file-lines'
 import { Button } from '../lib/button'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { getBoolean, setBoolean } from '../../lib/local-storage'
 
-const MaxFileSize = 1024 * 1024
-const RowHeight = 20
 const ConflictViewKey = 'conflict-view'
 
 /** The last Conflicts/Diff choice for files with conflict markers. */
@@ -59,11 +50,7 @@ export class ConflictView extends React.Component<
   IConflictViewProps,
   IConflictViewState
 > {
-  private readonly heights = new CellMeasurerCache({
-    fixedWidth: true,
-    defaultHeight: RowHeight,
-  })
-  private list: List | null = null
+  private readonly linesRef = React.createRef<WholeFileLines>()
   private loadId = 0
 
   public constructor(props: IConflictViewProps) {
@@ -86,21 +73,14 @@ export class ConflictView extends React.Component<
   private async load(isNewFile: boolean) {
     const id = ++this.loadId
     const { repository, file } = this.props
-    const buffer = await readPartialFile(
-      Path.join(repository.path, file.path),
-      0,
-      MaxFileSize - 1
-    ).catch(e => {
-      log.error('Could not read file for the conflict view', e)
-      return null
+    const { lines } = await loadWholeFile(repository, file.path, {
+      kind: 'disk',
     })
-    const lines = buffer?.toString('utf8').split(/\r?\n/) ?? []
     const regions = findConflicts(lines)
     if (id !== this.loadId) {
       return
     }
 
-    this.heights.clearAll()
     this.setState(
       {
         lines,
@@ -114,18 +94,7 @@ export class ConflictView extends React.Component<
       () => isNewFile && this.scrollToConflict(0)
     )
 
-    const rathena = await getRathenaHighlightContext(repository.path)
-    const tokens = await highlight(
-      lines,
-      Path.basename(file.path),
-      Path.extname(file.path),
-      4,
-      lines.map((_, i) => i),
-      { path: file.path, rathena: rathena ?? undefined }
-    ).catch(e => {
-      log.error('Highlighter failed for the conflict view', e)
-      return {}
-    })
+    const tokens = await highlightWholeFile(repository, file.path, lines)
     if (id === this.loadId) {
       this.setState({ tokens })
     }
@@ -161,26 +130,14 @@ export class ConflictView extends React.Component<
             Incoming {this.label(regions[current]?.incomingLabel)}
           </span>
         </div>
-        <div className="conflict-view-lines cm-s-default">
-          <AutoSizer onResize={this.onResize}>
-            {({ width, height }) => (
-              <List
-                ref={this.onListRef}
-                deferredMeasurementCache={this.heights}
-                width={width}
-                height={height}
-                rowCount={lines.length}
-                rowHeight={this.getRowHeight}
-                rowRenderer={this.renderRow}
-                scrollToAlignment="start"
-                // Passed only so the list re-renders when they change.
-                lines={lines}
-                tokens={this.state.tokens}
-                current={current}
-              />
-            )}
-          </AutoSizer>
-        </div>
+        <WholeFileLines
+          ref={this.linesRef}
+          lines={lines}
+          tokens={this.state.tokens}
+          rowClassName={this.rowClassName}
+          isPlain={this.isMarker}
+          decorationKey={current}
+        />
       </div>
     )
   }
@@ -198,55 +155,15 @@ export class ConflictView extends React.Component<
     return label ? <code>{label}</code> : null
   }
 
-  private renderRow = ({ index, key, parent, style }: ListRowProps) => {
-    const { lines, tokens, kinds, regions, current } = this.state
-    const line = lines[index]
-    const kind = kinds[index]
-    const region = regions[current]
-    const isCurrent =
-      region !== undefined && index >= region.start && index <= region.end
-
-    return (
-      <CellMeasurer
-        cache={this.heights}
-        columnIndex={0}
-        key={key}
-        parent={parent}
-        rowIndex={index}
-      >
-        <div
-          className={classNames('conflict-view-row', kind, {
-            'current-conflict': isCurrent,
-          })}
-          style={style}
-        >
-          <span className="line-number" style={this.lineNumberStyle}>
-            {index + 1}
-          </span>
-          <span className="content">
-            {kind === 'marker'
-              ? line
-              : syntaxHighlightLine(line, [tokens[index] ?? {}])}
-          </span>
-        </div>
-      </CellMeasurer>
-    )
+  private rowClassName = (index: number) => {
+    const region = this.state.regions[this.state.current]
+    return classNames(this.state.kinds[index], {
+      'current-conflict':
+        region !== undefined && index >= region.start && index <= region.end,
+    })
   }
 
-  private get lineNumberStyle() {
-    return { width: `${String(this.state.lines.length).length + 2}ch` }
-  }
-
-  private getRowHeight = (row: { index: number }) =>
-    this.heights.rowHeight(row) ?? RowHeight
-
-  private onListRef = (list: List | null) => {
-    this.list = list
-  }
-
-  private onResize = () => {
-    this.heights.clearAll()
-  }
+  private isMarker = (index: number) => this.state.kinds[index] === 'marker'
 
   private onPrevious = () => {
     const n = this.state.regions.length
@@ -262,11 +179,8 @@ export class ConflictView extends React.Component<
     if (region === undefined) {
       return
     }
-    // A few lines of context above; heights above are estimates until
-    // measured, so settle once more on the next frame.
-    const row = Math.max(region.start - 3, 0)
     this.setState({ current })
-    this.list?.scrollToRow(row)
-    requestAnimationFrame(() => this.list?.scrollToRow(row))
+    // A few lines of context above.
+    this.linesRef.current?.scrollToRow(Math.max(region.start - 3, 0))
   }
 }

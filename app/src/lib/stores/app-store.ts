@@ -4139,6 +4139,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
         includingStatus: false,
         clearPartialState: false,
       })
+    } else if (section === RepositorySectionTab.Files) {
+      // The Files tab reads the disk itself; status is loaded above.
+      refreshSectionPromise = Promise.resolve()
     } else {
       return assertNever(section, `Unknown section: ${section}`)
     }
@@ -9077,12 +9080,32 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return created === true
   }
 
+  /**
+   * Opens the Files tab at a commit (null: the working directory), optionally
+   * on a file; undefined leaves either as it is. See `Dispatcher`.
+   */
+  public async _browseFiles(
+    repository: Repository,
+    commitish?: string | null,
+    path?: string | null
+  ) {
+    this.repositoryStateCache.update(repository, state => ({
+      filesCommitish:
+        commitish === undefined ? state.filesCommitish : commitish,
+      filesSelectedPath: path === undefined ? state.filesSelectedPath : path,
+    }))
+    await this._changeRepositorySection(repository, RepositorySectionTab.Files)
+  }
+
   /** Opens History filtered to one file. See `Dispatcher`. */
   public async _showFileHistory(repository: Repository, path: string) {
     this._setHistoryFilePath(repository, path)
     await this._executeCompare(repository, { kind: HistoryTabMode.History })
     this._updateCompareForm(repository, { showBranchList: false })
-    await this._changeRepositorySection(repository, RepositorySectionTab.History)
+    await this._changeRepositorySection(
+      repository,
+      RepositorySectionTab.History
+    )
   }
 
   /** See `Dispatcher`. */

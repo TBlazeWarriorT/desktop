@@ -40,34 +40,8 @@
     }
   }
 
-  .conflict-view-lines {
-    flex-grow: 1;
-    min-height: 0;
-    font-family: var(--font-family-monospace);
-    font-size: var(--font-size-sm);
-    background: var(--background-color);
-  }
-
-  .conflict-view-row {
-    display: flex;
-    line-height: 20px;
-    border-left: 3px solid transparent;
-
-    .line-number {
-      flex-shrink: 0;
-      padding-right: var(--spacing-half);
-      text-align: right;
-      color: var(--diff-line-number-color);
-      user-select: none;
-    }
-
-    .content {
-      flex-grow: 1;
-      min-width: 0;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
+  // Line layout is in _whole-file.scss; these are the conflict colors.
+  .whole-file-row {
     &.current {
       background: var(--conflict-current-background);
     }

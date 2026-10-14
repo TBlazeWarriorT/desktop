@@ -185,6 +185,9 @@ interface ICommitListProps {
   /** Search results: where the query matched, shown next to each commit. */
   readonly searchMatches?: ReadonlyMap<string, string>
 
+  /** Opens the Files tab at a commit. */
+  readonly onBrowseFiles?: (sha: string) => void
+
   /** Commits that would conflict with main, and the tooltip explaining it. */
   readonly conflictWarnings?: ReadonlyMap<string, string>
 
@@ -895,6 +898,19 @@ export class CommitList extends React.Component<
         enabled: !isLocal && !!gitHubRepository,
       }
     )
+
+    if (this.props.onBrowseFiles !== undefined) {
+      const onBrowseFiles = this.props.onBrowseFiles
+      items.push(
+        { type: 'separator' },
+        {
+          label: __DARWIN__
+            ? 'Browse Files at This Commit'
+            : 'Browse files at this commit',
+          action: () => onBrowseFiles(commit.sha),
+        }
+      )
+    }
 
     return items
   }

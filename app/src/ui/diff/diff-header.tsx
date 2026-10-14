@@ -5,12 +5,34 @@ import { IDiff, DiffType } from '../../models/diff'
 import { Octicon, iconForStatus } from '../octicons'
 import { mapStatus } from '../../lib/status'
 import { DiffOptions } from './diff-options'
-import { isMarkdownFile } from '../../lib/markdown-files'
-import { getConflictMarkerCount } from '../../lib/conflict-markers'
+import {
+  ViewMode,
+  getAvailableViewModes,
+  getCurrentViewMode,
+  getPrefsForViewMode,
+} from './view-mode'
 import { IViewMode, ViewModeSwitcher } from './view-mode-switcher'
 
-type ViewMode = 'conflicts' | 'diff' | 'preview'
 import * as octicons from '../octicons/octicons.generated'
+
+const viewModeInfo: Record<ViewMode, Omit<IViewMode<ViewMode>, 'id'>> = {
+  conflicts: {
+    label: 'Conflicts',
+    icon: octicons.alert,
+    tooltip: 'The whole file with its conflicts highlighted',
+  },
+  diff: { label: 'Diff', icon: octicons.diff, tooltip: 'What changed' },
+  file: {
+    label: 'File',
+    icon: octicons.file,
+    tooltip: 'The whole file as it is in this version',
+  },
+  preview: {
+    label: 'Preview',
+    icon: octicons.eye,
+    tooltip: 'The rendered file',
+  },
+}
 
 interface IDiffHeaderProps {
   readonly path: string
@@ -39,6 +61,10 @@ interface IDiffHeaderProps {
   /** Whether a file with conflict markers is shown in the conflict view. */
   readonly conflictView?: boolean
   readonly onConflictViewChanged?: (conflictView: boolean) => void
+
+  /** Whether the file is shown whole instead of as a diff. */
+  readonly wholeFile?: boolean
+  readonly onWholeFileChanged?: (wholeFile: boolean) => void
 }
 
 /** Displays information about a file */
@@ -78,59 +104,36 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
     )
   }
 
-  private getViewModes() {
+  private getViewModes(): ReadonlyArray<IViewMode<ViewMode>> {
     const { status, path } = this.props
-    const modes = new Array<IViewMode<ViewMode>>()
-    if (
-      this.props.onConflictViewChanged !== undefined &&
-      getConflictMarkerCount(status) > 0
-    ) {
-      modes.push({
-        id: 'conflicts',
-        label: 'Conflicts',
-        icon: octicons.alert,
-        tooltip: 'The whole file with its conflicts highlighted',
-      })
-    }
-    modes.push({
-      id: 'diff',
-      label: 'Diff',
-      icon: octicons.diff,
-      tooltip: 'What changed',
-    })
-    if (
-      this.props.onMarkdownPreviewChanged !== undefined &&
-      isMarkdownFile(path)
-    ) {
-      modes.push({
-        id: 'preview',
-        label: 'Preview',
-        icon: octicons.eye,
-        tooltip: 'The rendered file',
-      })
-    }
-    return modes
+    return getAvailableViewModes(path, status, {
+      conflicts: this.props.onConflictViewChanged !== undefined,
+      file: this.props.onWholeFileChanged !== undefined,
+      preview: this.props.onMarkdownPreviewChanged !== undefined,
+    }).map(id => ({ id, ...viewModeInfo[id] }))
   }
 
-  /** Same precedence as the content: conflicts, then preview, then diff. */
   private getViewMode(modes: ReadonlyArray<IViewMode<ViewMode>>): ViewMode {
-    const has = (id: ViewMode) => modes.some(m => m.id === id)
-    if (has('conflicts') && this.props.conflictView) {
-      return 'conflicts'
-    }
-    if (has('preview') && this.props.markdownPreview) {
-      return 'preview'
-    }
-    return 'diff'
+    const { conflictView, markdownPreview, wholeFile } = this.props
+    return getCurrentViewMode(
+      modes.map(m => m.id),
+      { conflictView, markdownPreview, wholeFile }
+    )
   }
 
   private onViewModeChanged = (mode: ViewMode) => {
-    const modes = this.getViewModes()
-    if (modes.some(m => m.id === 'conflicts')) {
-      this.props.onConflictViewChanged?.(mode === 'conflicts')
+    const prefs = getPrefsForViewMode(
+      mode,
+      this.getViewModes().map(m => m.id)
+    )
+    if (prefs.conflictView !== undefined) {
+      this.props.onConflictViewChanged?.(prefs.conflictView)
     }
-    if (mode !== 'conflicts' && modes.some(m => m.id === 'preview')) {
-      this.props.onMarkdownPreviewChanged?.(mode === 'preview')
+    if (prefs.markdownPreview !== undefined) {
+      this.props.onMarkdownPreviewChanged?.(prefs.markdownPreview)
+    }
+    if (prefs.wholeFile !== undefined) {
+      this.props.onWholeFileChanged?.(prefs.wholeFile)
     }
   }
 

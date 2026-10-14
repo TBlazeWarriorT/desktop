@@ -283,6 +283,15 @@ File history: Right Click \`npc/custom/healer.txt\` (in Changes, or in a commit'
 list) > Show history. History shows only the commits that changed it, each opening
 on that file; type in the box to search within them; click the file chip to go back.
 
+## Whole files
+
+- In Changes or History, the switcher above a diff has **File**: the whole file in
+  that version (disk in Changes, the commit's in History). Deleted files have no File.
+- The **Files** tab (Ctrl+3, View > Files): the folder tree of the working
+  directory; type to find a file (\`heal\` finds \`npc/custom/healer.txt\`).
+- History: Right Click a commit > Browse files at this commit. The tab shows
+  "At commit …" with ✕ to go back to the working directory.
+
 ## Conflict warning against main
 
 Switch to \`merge-me-conflict\` or \`pull/conflict\`: in History, their own commit gets

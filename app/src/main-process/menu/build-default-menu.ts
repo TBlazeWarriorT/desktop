@@ -195,6 +195,12 @@ export function buildDefaultMenuTemplate({
         click: emit('show-history'),
       },
       {
+        label: __DARWIN__ ? 'Show Files' : 'Fil&es',
+        id: 'show-files',
+        accelerator: 'CmdOrCtrl+3',
+        click: emit('show-files'),
+      },
+      {
         label: __DARWIN__ ? 'Show Repository List' : 'Repository &list',
         id: 'show-repository-list',
         accelerator: 'CmdOrCtrl+T',

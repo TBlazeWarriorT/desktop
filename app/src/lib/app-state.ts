@@ -475,6 +475,8 @@ export type Foldout =
 export enum RepositorySectionTab {
   Changes,
   History,
+  /** Fork: browse the repository's files. */
+  Files,
 }
 
 /**
@@ -554,6 +556,10 @@ export interface IRepositoryState {
 
   /** File the History search is limited to ("file history"), if any. */
   readonly historyFilePath: string | null
+
+  /** Files tab: the commit browsed (null: the working directory) and file. */
+  readonly filesCommitish: string | null
+  readonly filesSelectedPath: string | null
 
   /**
    * The state of the current pull request view in the repository.

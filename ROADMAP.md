@@ -38,12 +38,11 @@ notes are in `AGENTS.md`.
        - [x] Branch dropdown: ⚠ next to local branches whose latest commit would
              conflict (two checks at a time, same cache).
        - [ ] Recheck right after a fetch moves origin/main (today: when the list reloads).
-7. [ ] **View whole files**, with the diff's syntax highlighting and line numbers but no
-       add/remove coloring (not as "everything added"). Entry points:
-       - "View whole file" on any file open in a diff (same commit);
-       - Repository > View All Files: the repo's folder tree at HEAD with fuzzy search
-         (repos have thousands of files, so a virtualized tree, not a flat list);
-       - Right Click a commit in History → "Browse files at this commit".
+7. [x] **View whole files**, with the diff's syntax highlighting and line numbers.
+       - [x] **File** in the diff's view switcher (Changes: disk; History: that commit).
+       - [x] **Files** tab (Ctrl+3): working-directory tree with fuzzy find.
+       - [x] Right Click a commit → Browse files at this commit.
+       - [ ] Image files (binary files only say "not shown" today).
 8. [ ] **Markdown preview** like github.com.
        - [x] Preview/Diff button on `.md` diffs (Changes and History), remembering the last
              choice; relative images inlined from the right version of the file.

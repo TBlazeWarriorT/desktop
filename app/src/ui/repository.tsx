@@ -10,6 +10,8 @@ import { FilesChangedBadge } from './changes/files-changed-badge'
 import { SelectedCommits, CompareSidebar } from './history'
 import { Resizable } from './resizable'
 import { TabBar } from './tab-bar'
+import { FilesSidebar } from './files/files-sidebar'
+import { FilesContent } from './files/files-content'
 import {
   IRepositoryState,
   RepositorySectionTab,
@@ -151,6 +153,7 @@ interface IRepositoryViewState {
 const enum Tab {
   Changes = 0,
   History = 1,
+  Files = 2,
 }
 
 export class RepositoryView extends React.Component<
@@ -215,9 +218,12 @@ export class RepositoryView extends React.Component<
   }
 
   private renderTabs(): JSX.Element {
+    const section = this.props.state.selectedSection
     const selectedTab =
-      this.props.state.selectedSection === RepositorySectionTab.Changes
+      section === RepositorySectionTab.Changes
         ? Tab.Changes
+        : section === RepositorySectionTab.Files
+        ? Tab.Files
         : Tab.History
 
     return (
@@ -229,6 +235,10 @@ export class RepositoryView extends React.Component<
 
         <div className="with-indicator" id="history-tab">
           <span>History</span>
+        </div>
+
+        <div className="with-indicator" id="files-tab">
+          <span>Files</span>
         </div>
       </TabBar>
     )
@@ -385,6 +395,19 @@ export class RepositoryView extends React.Component<
     )
   }
 
+  private renderFilesSidebar() {
+    const { state } = this.props
+    return (
+      <FilesSidebar
+        repository={this.props.repository}
+        dispatcher={this.props.dispatcher}
+        commitish={state.filesCommitish}
+        selectedPath={state.filesSelectedPath}
+        reloadKey={state.changesState.workingDirectory}
+      />
+    )
+  }
+
   private renderSidebarContents(): JSX.Element {
     const selectedSection = this.props.state.selectedSection
 
@@ -392,6 +415,8 @@ export class RepositoryView extends React.Component<
       return this.renderChangesSidebar()
     } else if (selectedSection === RepositorySectionTab.History) {
       return this.renderCompareSidebar()
+    } else if (selectedSection === RepositorySectionTab.Files) {
+      return this.renderFilesSidebar()
     } else {
       return assertNever(selectedSection, 'Unknown repository section')
     }
@@ -639,6 +664,16 @@ export class RepositoryView extends React.Component<
       return this.renderContentForChanges()
     } else if (selectedSection === RepositorySectionTab.History) {
       return this.renderContentForHistory()
+    } else if (selectedSection === RepositorySectionTab.Files) {
+      const { state } = this.props
+      return (
+        <FilesContent
+          repository={this.props.repository}
+          commitish={state.filesCommitish}
+          path={state.filesSelectedPath}
+          reloadKey={state.changesState.workingDirectory}
+        />
+      )
     } else {
       return assertNever(selectedSection, 'Unknown repository section')
     }
@@ -695,20 +730,21 @@ export class RepositoryView extends React.Component<
       return
     }
 
-    // Toggle tab selection on Ctrl+Tab. Note that we don't care
-    // about the shift key here, we can get away with that as long
-    // as there's only two tabs.
+    // Ctrl+Tab goes to the next tab, Ctrl+Shift+Tab to the previous one.
     if (event.ctrlKey && event.key === 'Tab') {
-      this.changeTab()
+      this.changeTab(event.shiftKey ? -1 : 1)
       event.preventDefault()
     }
   }
 
-  private changeTab() {
-    const section =
-      this.props.state.selectedSection === RepositorySectionTab.History
-        ? RepositorySectionTab.Changes
-        : RepositorySectionTab.History
+  private changeTab(step: 1 | -1) {
+    const order = [
+      RepositorySectionTab.Changes,
+      RepositorySectionTab.History,
+      RepositorySectionTab.Files,
+    ]
+    const index = order.indexOf(this.props.state.selectedSection)
+    const section = order[(index + step + order.length) % order.length]
 
     this.props.dispatcher.changeRepositorySection(
       this.props.repository,
@@ -720,6 +756,8 @@ export class RepositoryView extends React.Component<
     const section =
       tab === Tab.History
         ? RepositorySectionTab.History
+        : tab === Tab.Files
+        ? RepositorySectionTab.Files
         : RepositorySectionTab.Changes
 
     this.props.dispatcher.changeRepositorySection(

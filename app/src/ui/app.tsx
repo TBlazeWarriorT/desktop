@@ -472,6 +472,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.showChanges(true)
       case 'show-history':
         return this.showHistory(true)
+      case 'show-files':
+        return this.showFiles()
       case 'choose-repository':
         return this.chooseRepository()
       case 'add-local-repository':
@@ -901,6 +903,14 @@ export class App extends React.Component<IAppProps, IAppState> {
 
   private showAbout() {
     this.props.dispatcher.showPopup({ type: PopupType.About })
+  }
+
+  private async showFiles() {
+    const state = this.state.selectedState
+    if (state !== null && state.type === SelectionType.Repository) {
+      await this.props.dispatcher.closeCurrentFoldout()
+      await this.props.dispatcher.browseFiles(state.repository)
+    }
   }
 
   private async showHistory(

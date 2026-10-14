@@ -2880,6 +2880,18 @@ export class Dispatcher {
     return this.appStore._createStash(repository, title, files)
   }
 
+  /**
+   * Open the Files tab at a commit (null: the working directory), optionally
+   * on a file; leaving either undefined keeps the current one.
+   */
+  public browseFiles(
+    repository: Repository,
+    commitish?: string | null,
+    path?: string | null
+  ) {
+    return this.appStore._browseFiles(repository, commitish, path)
+  }
+
   /** Open History filtered to the commits that changed this file. */
   public showFileHistory(repository: Repository, path: string) {
     return this.appStore._showFileHistory(repository, path)

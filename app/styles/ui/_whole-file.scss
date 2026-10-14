@@ -1,0 +1,49 @@
+// Every line of a file, highlighted (app/src/ui/diff/whole-file-lines.tsx).
+.whole-file-lines {
+  flex-grow: 1;
+  min-height: 0;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-sm);
+  background: var(--background-color);
+}
+
+.whole-file-row {
+  display: flex;
+  line-height: 20px;
+  border-left: 3px solid transparent;
+
+  .line-number {
+    flex-shrink: 0;
+    padding-right: var(--spacing-half);
+    text-align: right;
+    color: var(--diff-line-number-color);
+    user-select: none;
+  }
+
+  .content {
+    flex-grow: 1;
+    min-width: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+}
+
+// A file shown whole (app/src/ui/diff/file-view.tsx).
+.file-view {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+
+  .file-view-message {
+    margin: auto;
+    color: var(--text-secondary-color);
+  }
+
+  .file-view-banner {
+    padding: var(--spacing-half) var(--spacing);
+    border-bottom: var(--base-border);
+    background: var(--box-alt-background-color);
+    color: var(--text-secondary-color);
+  }
+}

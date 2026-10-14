@@ -14,7 +14,6 @@ import { PopupType } from '../../models/popup'
 import { Emoji } from '../../lib/emoji'
 import {
   MarkdownPreview,
-  isMarkdownFile,
   getMarkdownPreview,
   setMarkdownPreview,
 } from '../diff/markdown-preview'
@@ -23,7 +22,8 @@ import {
   getConflictView,
   setConflictView,
 } from '../diff/conflict-view'
-import { getConflictMarkerCount } from '../../lib/conflict-markers'
+import { FileView, getWholeFileView, setWholeFileView } from '../diff/file-view'
+import { getAvailableViewModes, getCurrentViewMode } from '../diff/view-mode'
 
 interface IChangesProps {
   readonly repository: Repository
@@ -73,6 +73,7 @@ interface IChangesProps {
 interface IChangesState {
   readonly markdownPreview: boolean
   readonly conflictView: boolean
+  readonly wholeFile: boolean
 }
 
 export class Changes extends React.Component<IChangesProps, IChangesState> {
@@ -81,6 +82,7 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
     this.state = {
       markdownPreview: getMarkdownPreview(),
       conflictView: getConflictView(),
+      wholeFile: getWholeFileView(),
     }
   }
 
@@ -142,6 +144,8 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
           onMarkdownPreviewChanged={this.onMarkdownPreviewChanged}
           conflictView={this.state.conflictView}
           onConflictViewChanged={this.onConflictViewChanged}
+          wholeFile={this.state.wholeFile}
+          onWholeFileChanged={this.onWholeFileChanged}
         />
 
         {this.renderContent()}
@@ -150,19 +154,34 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
   }
 
   private renderContent() {
-    const { file } = this.props
-    if (this.state.conflictView && getConflictMarkerCount(file.status) > 0) {
-      return (
-        <ConflictView
-          repository={this.props.repository}
-          file={file}
-          diff={this.props.diff}
-        />
-      )
+    const { file, repository, diff } = this.props
+    const modes = getAvailableViewModes(file.path, file.status, {
+      conflicts: true,
+      file: true,
+      preview: true,
+    })
+    switch (getCurrentViewMode(modes, this.state)) {
+      case 'conflicts':
+        return <ConflictView repository={repository} file={file} diff={diff} />
+      case 'preview':
+        return this.renderMarkdownPreview()
+      case 'file':
+        return (
+          <FileView
+            repository={repository}
+            path={file.path}
+            source={{ kind: 'disk' }}
+            reloadKey={diff}
+          />
+        )
+      case 'diff':
+        return this.renderDiff()
     }
-    return this.state.markdownPreview && isMarkdownFile(file.path)
-      ? this.renderMarkdownPreview()
-      : this.renderDiff()
+  }
+
+  private onWholeFileChanged = (wholeFile: boolean) => {
+    setWholeFileView(wholeFile)
+    this.setState({ wholeFile })
   }
 
   private onConflictViewChanged = (conflictView: boolean) => {
