@@ -3,7 +3,7 @@ import { getConflictMarkerCount } from '../../lib/conflict-markers'
 import { isMarkdownFile } from '../../lib/markdown-files'
 
 /** The ways a changed file can be shown, in switcher order. */
-export type ViewMode = 'conflicts' | 'diff' | 'file' | 'preview'
+export type ViewMode = 'conflicts' | 'diff' | 'preview' | 'file'
 
 /** Which modes a screen offers at all (History has no conflict view). */
 export interface IViewModeFeatures {
@@ -12,7 +12,10 @@ export interface IViewModeFeatures {
   readonly preview: boolean
 }
 
-/** The remembered choices; each one only applies where its mode exists. */
+/**
+ * The choices behind the shown mode. Conflicts and Preview are remembered
+ * across files; File only lasts for the file it was picked on.
+ */
 export interface IViewModePrefs {
   readonly conflictView?: boolean
   readonly markdownPreview?: boolean
@@ -29,48 +32,56 @@ export function getAvailableViewModes(
     modes.push('conflicts')
   }
   modes.push('diff')
+  if (features.preview && isMarkdownFile(path)) {
+    modes.push('preview')
+  }
   // A deleted file has nothing left to show in full.
   if (features.file && status.kind !== AppFileStatusKind.Deleted) {
     modes.push('file')
   }
-  if (features.preview && isMarkdownFile(path)) {
-    modes.push('preview')
-  }
   return modes
 }
 
-/** Conflicts win, then Preview, then File; Diff otherwise. */
+/** File when just picked, then Conflicts, then Preview; Diff otherwise. */
 export function getCurrentViewMode(
   modes: ReadonlyArray<ViewMode>,
   prefs: IViewModePrefs
 ): ViewMode {
-  if (modes.includes('conflicts') && prefs.conflictView) {
+  if (modes.includes('file') && prefs.wholeFile) {
+    return 'file'
+  } else if (modes.includes('conflicts') && prefs.conflictView) {
     return 'conflicts'
   } else if (modes.includes('preview') && prefs.markdownPreview) {
     return 'preview'
-  } else if (modes.includes('file') && prefs.wholeFile) {
-    return 'file'
   }
   return 'diff'
 }
 
-/** The preferences to store so that `mode` is the one shown. */
+/**
+ * The choices to store so that `mode` is the one shown. Undefined ones keep
+ * their value: picking File doesn't forget that Markdown opens in Preview.
+ */
 export function getPrefsForViewMode(
   mode: ViewMode,
   modes: ReadonlyArray<ViewMode>
 ): IViewModePrefs {
-  // Modes this file lacks stay undefined, so their stored choice is kept.
-  return {
-    conflictView: modes.includes('conflicts')
-      ? mode === 'conflicts'
-      : undefined,
-    markdownPreview:
-      mode !== 'conflicts' && modes.includes('preview')
-        ? mode === 'preview'
-        : undefined,
-    wholeFile:
-      mode !== 'conflicts' && modes.includes('file')
-        ? mode === 'file'
-        : undefined,
+  const has = (m: ViewMode) => modes.includes(m)
+  switch (mode) {
+    case 'file':
+      return { wholeFile: true }
+    case 'conflicts':
+      return { conflictView: true, wholeFile: false }
+    case 'preview':
+      return {
+        markdownPreview: true,
+        conflictView: has('conflicts') ? false : undefined,
+        wholeFile: false,
+      }
+    case 'diff':
+      return {
+        conflictView: has('conflicts') ? false : undefined,
+        markdownPreview: has('preview') ? false : undefined,
+        wholeFile: false,
+      }
   }
 }

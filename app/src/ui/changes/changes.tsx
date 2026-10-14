@@ -22,7 +22,7 @@ import {
   getConflictView,
   setConflictView,
 } from '../diff/conflict-view'
-import { FileView, getWholeFileView, setWholeFileView } from '../diff/file-view'
+import { FileView } from '../diff/file-view'
 import { getAvailableViewModes, getCurrentViewMode } from '../diff/view-mode'
 
 interface IChangesProps {
@@ -82,7 +82,14 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
     this.state = {
       markdownPreview: getMarkdownPreview(),
       conflictView: getConflictView(),
-      wholeFile: getWholeFileView(),
+      wholeFile: false,
+    }
+  }
+
+  public componentDidUpdate(prevProps: IChangesProps) {
+    // File is picked per file; another file opens in Diff (or Preview).
+    if (prevProps.file.path !== this.props.file.path && this.state.wholeFile) {
+      this.setState({ wholeFile: false })
     }
   }
 
@@ -180,7 +187,6 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
   }
 
   private onWholeFileChanged = (wholeFile: boolean) => {
-    setWholeFileView(wholeFile)
     this.setState({ wholeFile })
   }
 

@@ -9,14 +9,6 @@ import {
   loadWholeFile,
   sameLines,
 } from './whole-file-lines'
-import { getBoolean, setBoolean } from '../../lib/local-storage'
-
-const WholeFileKey = 'whole-file-view'
-
-/** The last File/Diff choice, shared by every diff. */
-export const getWholeFileView = () => getBoolean(WholeFileKey, false)
-export const setWholeFileView = (value: boolean) =>
-  setBoolean(WholeFileKey, value)
 
 interface IFileViewProps {
   readonly repository: Repository

@@ -33,7 +33,7 @@ import {
   getMarkdownPreview,
   setMarkdownPreview,
 } from '../diff/markdown-preview'
-import { FileView, getWholeFileView, setWholeFileView } from '../diff/file-view'
+import { FileView } from '../diff/file-view'
 import { getAvailableViewModes, getCurrentViewMode } from '../diff/view-mode'
 import { getDotComAPIEndpoint } from '../../lib/api'
 import { IMenuItem } from '../../lib/menu-item'
@@ -120,7 +120,7 @@ export class SelectedCommits extends React.Component<
     this.state = {
       isExpanded: false,
       markdownPreview: getMarkdownPreview(),
-      wholeFile: getWholeFileView(),
+      wholeFile: false,
     }
   }
 
@@ -133,6 +133,18 @@ export class SelectedCommits extends React.Component<
     const file = files[row]
 
     this.props.onOpenInExternalEditor(file.path)
+  }
+
+  public componentDidUpdate(prevProps: ISelectedCommitsProps) {
+    // File is picked per file; another file or commit opens in Diff.
+    const key = (f: CommittedFileChange | null) =>
+      f === null ? null : `${f.commitish}:${f.path}`
+    if (
+      key(prevProps.selectedFile) !== key(this.props.selectedFile) &&
+      this.state.wholeFile
+    ) {
+      this.setState({ wholeFile: false })
+    }
   }
 
   public componentWillUpdate(nextProps: ISelectedCommitsProps) {
@@ -256,7 +268,6 @@ export class SelectedCommits extends React.Component<
   }
 
   private onWholeFileChanged = (wholeFile: boolean) => {
-    setWholeFileView(wholeFile)
     this.setState({ wholeFile })
   }
 

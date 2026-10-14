@@ -23,8 +23,8 @@ describe('view modes', () => {
     ])
     assert.deepStrictEqual(getAvailableViewModes('README.md', modified, all), [
       'diff',
-      'file',
       'preview',
+      'file',
     ])
     const deleted = { kind: AppFileStatusKind.Deleted } as const
     assert.deepStrictEqual(getAvailableViewModes('a.txt', deleted, all), [
@@ -33,20 +33,22 @@ describe('view modes', () => {
     const conflicted = { ...modified, conflictMarkerCount: 3 }
     assert.deepStrictEqual(
       getAvailableViewModes('a.md', conflicted, { ...all, conflicts: false }),
-      ['diff', 'file', 'preview']
+      ['diff', 'preview', 'file']
     )
   })
 
   it('round-trips a choice through the stored preferences', () => {
-    const modes = ['conflicts', 'diff', 'file', 'preview'] as const
+    const modes = ['conflicts', 'diff', 'preview', 'file'] as const
     for (const mode of modes) {
       const prefs = getPrefsForViewMode(mode, modes)
       assert.equal(getCurrentViewMode(modes, prefs), mode)
     }
-    // A file without Preview leaves that choice alone.
+    // Picking File doesn't forget that Markdown opens in Preview.
+    assert.equal(getPrefsForViewMode('file', modes).markdownPreview, undefined)
+    // ...and File, picked on this file, wins over it.
     assert.equal(
-      getPrefsForViewMode('file', ['diff', 'file']).markdownPreview,
-      undefined
+      getCurrentViewMode(modes, { markdownPreview: true, wholeFile: true }),
+      'file'
     )
   })
 })
