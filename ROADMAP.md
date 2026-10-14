@@ -55,6 +55,9 @@ notes are in `AGENTS.md`.
 11. [x] **Remotes/upstreams:** Repository > Remotes… lists every remote, with add (URL
         or local folder, then fetch), edit name/URL, remove and per-remote Fetch (a plain
         Fetch only covers the default remote and a fork's parent).
+        - [x] Branch dropdown: one collapsible group per remote (origin first) with all
+              its branches, tracked ones included; collapsed unless opened, remembered
+              per repository. A tracked remote branch switches to its local branch.
         - [ ] Cherry-pick from a remote branch without checking it out (today, picking it
               in the dropdown creates a local branch and switches to it).
 12. [ ] **Reword and edit older commits**, not just the last one.

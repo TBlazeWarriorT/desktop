@@ -732,6 +732,13 @@ function createStateUpdate<T extends IFilterListItem, GroupIdentifier>(
           item,
         }))
 
+    if (group.collapsed && !filter && props.renderGroupHeader) {
+      groupIndices.push(idx)
+      rows.push([{ kind: 'group', identifier: group.identifier }])
+      section++
+      continue
+    }
+
     if (!items.length) {
       continue
     }

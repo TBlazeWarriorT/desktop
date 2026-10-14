@@ -133,6 +133,7 @@ export class GitStore extends BaseStore {
 
   private _allBranches: ReadonlyArray<Branch> = []
   private _remoteTips: ReadonlyMap<string, string> = new Map()
+  private _remoteBranches: ReadonlyArray<Branch> = []
 
   private _recentBranches: ReadonlyArray<Branch> = []
 
@@ -407,10 +408,11 @@ export class GitStore extends BaseStore {
     }
 
     this._allBranches = this.mergeRemoteAndLocalBranches(localAndRemoteBranches)
+    this._remoteBranches = localAndRemoteBranches.filter(
+      b => b.type === BranchType.Remote
+    )
     this._remoteTips = new Map(
-      localAndRemoteBranches
-        .filter(b => b.type === BranchType.Remote)
-        .map(b => [b.name, b.tip.sha])
+      this._remoteBranches.map(b => [b.name, b.tip.sha])
     )
 
     // refreshRecentBranches is dependent on having a default branch
@@ -604,6 +606,11 @@ export class GitStore extends BaseStore {
   /** See IBranchesState.remoteTips. */
   public get remoteTips(): ReadonlyMap<string, string> {
     return this._remoteTips
+  }
+
+  /** See IBranchesState.remoteBranches. */
+  public get remoteBranches(): ReadonlyArray<Branch> {
+    return this._remoteBranches
   }
 
   /** The most recently checked out branches. */

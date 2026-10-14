@@ -5,7 +5,7 @@ import {
   Repository,
   isRepositoryWithGitHubRepository,
 } from '../../models/repository'
-import { Branch } from '../../models/branch'
+import { Branch, BranchType } from '../../models/branch'
 import { BranchesTab } from '../../models/branches-tab'
 import { PopupType } from '../../models/popup'
 
@@ -52,6 +52,8 @@ interface IBranchesContainerProps {
   readonly allBranches: ReadonlyArray<Branch>
   /** See IBranchesState.remoteTips. */
   readonly remoteTips?: ReadonlyMap<string, string>
+  /** Listed by remote, in collapsible groups at the end. */
+  readonly remoteBranches?: ReadonlyArray<Branch>
   readonly defaultBranch: Branch | null
   readonly currentBranch: Branch | null
   readonly recentBranches: ReadonlyArray<Branch>
@@ -323,6 +325,7 @@ export class BranchesContainer extends React.Component<
             defaultBranch={this.props.defaultBranch}
             currentBranch={this.props.currentBranch}
             allBranches={this.props.allBranches}
+            remoteBranches={this.props.remoteBranches}
             recentBranches={this.props.recentBranches}
             onItemClick={this.onBranchItemClick}
             filterText={this.state.branchFilterText}
@@ -477,9 +480,17 @@ export class BranchesContainer extends React.Component<
     this.props.dispatcher.startMergeBranchOperation(this.props.repository)
   }
 
-  private onBranchItemClick = (branch: Branch) => {
+  private onBranchItemClick = (clicked: Branch) => {
     const { repository, dispatcher } = this.props
     dispatcher.closeFoldout(FoldoutType.Branch)
+
+    // A remote branch that a local one tracks switches to that local branch.
+    const branch =
+      (clicked.type === BranchType.Remote &&
+        this.props.allBranches.find(
+          b => b.type === BranchType.Local && b.upstream === clicked.name
+        )) ||
+      clicked
 
     const timer = startTimer('checkout branch from list', repository)
     dispatcher.checkoutBranch(repository, branch).then(() => timer.done())

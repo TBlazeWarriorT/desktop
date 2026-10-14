@@ -313,6 +313,11 @@ Choose folder… > \`.git/test-upstream.git\`: it fetches, and \`upstream/upstre
 shows up in the branch dropdown. Then rename it, change its URL, fetch it with its own
 button, and remove it (its remote branches go away).
 
+The branch dropdown ends with a collapsed \`origin\` group (and \`upstream\` once
+added). Open it: every \`origin/*\` branch is there, \`origin/main\` included, and
+clicking \`origin/main\` switches to \`main\` instead of failing. Typing a filter shows
+matches inside collapsed groups too.
+
 ## Branches and pulling without switching
 
 Open the branch dropdown: each branch shows ↓behind ↑ahead of \`origin\`.

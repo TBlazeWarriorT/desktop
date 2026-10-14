@@ -60,4 +60,48 @@ describe('Branches grouping', () => {
     items = groups[2].items
     assert.equal(items[0].branch, otherBranch)
   })
+
+  it('lists remote branches by remote, origin first, collapsed unless expanded', () => {
+    const remote = (name: string) =>
+      new Branch(
+        name,
+        null,
+        branchTip,
+        BranchType.Remote,
+        `refs/remotes/${name}`
+      )
+    const originMaster = remote('origin/master')
+    const upstreamDev = remote('upstream/dev')
+    const aOld = remote('a-remote/old')
+
+    const groups = groupBranches(
+      defaultBranch,
+      currentBranch,
+      [...allBranches, upstreamDev],
+      recentBranches,
+      [upstreamDev, originMaster, aOld],
+      new Set(['upstream'])
+    )
+
+    assert.deepEqual(
+      groups.map(g => [g.identifier, g.collapsed]),
+      [
+        ['default', undefined],
+        ['recent', undefined],
+        ['other', undefined],
+        ['remote:origin', true],
+        ['remote:a-remote', true],
+        ['remote:upstream', false],
+      ]
+    )
+    // Remote branches leave "Other" for their remote's group.
+    assert.deepEqual(
+      groups[2].items.map(i => i.branch),
+      [otherBranch]
+    )
+    assert.deepEqual(
+      groups[3].items.map(i => i.branch),
+      [originMaster]
+    )
+  })
 })

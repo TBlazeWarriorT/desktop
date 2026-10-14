@@ -34,6 +34,9 @@ export interface IFilterListGroup<
   /** Whether to render this group's header. Defaults to true. */
   readonly showHeader?: boolean
 
+  /** Only the header is shown, unless a filter is typed. */
+  readonly collapsed?: boolean
+
   /** The items in the group. */
   readonly items: ReadonlyArray<Item>
 }

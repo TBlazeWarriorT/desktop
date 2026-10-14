@@ -720,6 +720,9 @@ export interface IBranchesState {
    */
   readonly remoteTips?: ReadonlyMap<string, string>
 
+  /** Every remote branch, including the ones a local branch tracks. */
+  readonly remoteBranches?: ReadonlyArray<Branch>
+
   /**
    * A list of zero to a few (at time of writing 5 but check loadRecentBranches
    * in git-store for definitive answer) branches that have been checked out

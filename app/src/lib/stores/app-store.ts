@@ -1444,6 +1444,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         upstreamDefaultBranch: gitStore.upstreamDefaultBranch,
         allBranches: gitStore.allBranches,
         remoteTips: gitStore.remoteTips,
+        remoteBranches: gitStore.remoteBranches,
         recentBranches: gitStore.recentBranches,
         pullWithRebase: gitStore.pullWithRebase,
         currentPullRequest,

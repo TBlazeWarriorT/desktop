@@ -2,8 +2,6 @@ import * as React from 'react'
 
 import { Branch } from '../../models/branch'
 
-import { assertNever } from '../../lib/fatal-error'
-
 import { SelectionSource } from '../lib/filter-list'
 import { IMatches } from '../../lib/fuzzy-find'
 import { Button } from '../lib/button'
@@ -23,6 +21,8 @@ import memoizeOne from 'memoize-one'
 import { getAuthors } from '../../lib/git/log'
 import { Repository } from '../../models/repository'
 import { formatDate } from '../../lib/format-date'
+import { Octicon } from '../octicons'
+import * as octicons from '../octicons/octicons.generated'
 
 const RowHeight = 30
 
@@ -48,6 +48,9 @@ interface IBranchListProps {
    * See IBranchesState.recentBranches
    */
   readonly recentBranches: ReadonlyArray<Branch>
+
+  /** When given, remote branches are listed by remote in collapsible groups. */
+  readonly remoteBranches?: ReadonlyArray<Branch>
 
   /**
    * The currently selected branch in the list, see the onSelectionChanged prop.
@@ -142,9 +145,52 @@ interface IBranchListProps {
 
 interface IBranchListState {
   readonly commitAuthorDates: ReadonlyMap<string, Date>
+  /** Remote groups are collapsed unless listed here; saved per repository. */
+  readonly expandedRemotes: ReadonlySet<string>
+}
+
+const expandedRemotesKey = (repository: Repository) =>
+  `branch-list-expanded-remotes-${repository.id}`
+
+function loadExpandedRemotes(repository: Repository): ReadonlySet<string> {
+  try {
+    const stored = localStorage.getItem(expandedRemotesKey(repository))
+    return new Set(stored ? (JSON.parse(stored) as string[]) : [])
+  } catch {
+    return new Set()
+  }
 }
 
 const commitDateCache = new Map<string, Date>()
+
+interface IRemoteGroupHeaderProps {
+  readonly remote: string
+  readonly expanded: boolean
+  readonly onToggle: (remote: string) => void
+}
+
+/** A remote's group header; clicking it shows or hides its branches. */
+class RemoteGroupHeader extends React.Component<IRemoteGroupHeaderProps> {
+  public render() {
+    const { remote, expanded } = this.props
+    return (
+      <div className="branches-list-content filter-list-group-header">
+        <Button
+          className="branch-remote-toggle"
+          ariaExpanded={expanded}
+          onClick={this.onClick}
+        >
+          <Octicon
+            symbol={expanded ? octicons.chevronDown : octicons.chevronRight}
+          />
+          {remote}
+        </Button>
+      </div>
+    )
+  }
+
+  private onClick = () => this.props.onToggle(this.props.remote)
+}
 
 /** The Branches list component. */
 export class BranchList extends React.Component<
@@ -176,12 +222,17 @@ export class BranchList extends React.Component<
   private getInvalidationProp = memoizeOne(
     (
       _groups: ReturnType<typeof groupBranches>,
-      _commitAuthorDates: IBranchListState['commitAuthorDates']
+      _commitAuthorDates: IBranchListState['commitAuthorDates'],
+      _expandedRemotes: IBranchListState['expandedRemotes']
     ) => ({})
   )
 
   private get invalidationProp() {
-    return this.getInvalidationProp(this.groups, this.state.commitAuthorDates)
+    return this.getInvalidationProp(
+      this.groups,
+      this.state.commitAuthorDates,
+      this.state.expandedRemotes
+    )
   }
 
   private get groups() {
@@ -189,7 +240,9 @@ export class BranchList extends React.Component<
       this.props.defaultBranch,
       this.props.currentBranch,
       this.props.allBranches,
-      this.props.recentBranches
+      this.props.recentBranches,
+      this.props.remoteBranches,
+      this.state.expandedRemotes
     )
   }
 
@@ -201,6 +254,7 @@ export class BranchList extends React.Component<
     super(props)
     this.state = {
       commitAuthorDates: new Map<string, Date>(),
+      expandedRemotes: loadExpandedRemotes(props.repository),
     }
   }
 
@@ -373,7 +427,9 @@ export class BranchList extends React.Component<
       case 'other':
         return label
       default:
-        return null
+        return label.startsWith('remote:')
+          ? (label as BranchGroupIdentifier)
+          : null
     }
   }
 
@@ -392,11 +448,36 @@ export class BranchList extends React.Component<
   private renderGroupHeader = (label: string) => {
     const identifier = this.parseHeader(label)
 
+    if (identifier?.startsWith('remote:')) {
+      const remote = identifier.slice('remote:'.length)
+      return (
+        <RemoteGroupHeader
+          remote={remote}
+          expanded={this.state.expandedRemotes.has(remote)}
+          onToggle={this.toggleRemote}
+        />
+      )
+    }
+
     return identifier !== null ? (
       <div className="branches-list-content filter-list-group-header">
         {this.getGroupLabel(identifier)}
       </div>
     ) : null
+  }
+
+  private toggleRemote = (remote: string) => {
+    const expandedRemotes = new Set(this.state.expandedRemotes)
+    if (!expandedRemotes.delete(remote)) {
+      expandedRemotes.add(remote)
+    }
+    this.setState({ expandedRemotes })
+    try {
+      localStorage.setItem(
+        expandedRemotesKey(this.props.repository),
+        JSON.stringify([...expandedRemotes])
+      )
+    } catch {}
   }
 
   private getGroupLabel(identifier: BranchGroupIdentifier) {
@@ -407,7 +488,7 @@ export class BranchList extends React.Component<
     } else if (identifier === 'other') {
       return __DARWIN__ ? 'Other Branches' : 'Other branches'
     } else {
-      return assertNever(identifier, `Unknown identifier: ${identifier}`)
+      return identifier.slice('remote:'.length)
     }
   }
 
