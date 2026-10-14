@@ -15,6 +15,8 @@ interface IStashNameDialogProps {
   readonly stash?: IStashEntry
   /** Stash only these files instead of every change. */
   readonly files?: ReadonlyArray<WorkingDirectoryFileChange>
+  /** Every stash, to warn about a name that is already taken. */
+  readonly stashEntries: ReadonlyArray<IStashEntry>
   readonly onDismissed: () => void
 }
 
@@ -63,6 +65,7 @@ export class StashNameDialog extends React.Component<
             autoFocus={true}
             onValueChanged={this.onTitleChanged}
           />
+          {this.renderDuplicateWarning()}
           {files !== undefined && (
             <Row className="stash-name-files">
               {files.map(f => f.path).join(', ')}
@@ -76,6 +79,23 @@ export class StashNameDialog extends React.Component<
           />
         </DialogFooter>
       </Dialog>
+    )
+  }
+
+  private renderDuplicateWarning() {
+    const title = this.state.title.trim()
+    const taken = this.props.stashEntries.some(
+      e =>
+        e.stashSha !== this.props.stash?.stashSha &&
+        e.title?.trim().toLowerCase() === title.toLowerCase()
+    )
+    if (title === '' || !taken) {
+      return null
+    }
+    return (
+      <Row className="stash-name-warning">
+        Another stash is already named “{title}”.
+      </Row>
     )
   }
 

@@ -2285,6 +2285,10 @@ export class App extends React.Component<IAppProps, IAppState> {
             files={
               popup.type === PopupType.CreateStash ? popup.files : undefined
             }
+            stashEntries={
+              this.props.repositoryStateManager.get(popup.repository)
+                .changesState.stashEntries
+            }
             onDismissed={onPopupDismissedFn}
           />
         )

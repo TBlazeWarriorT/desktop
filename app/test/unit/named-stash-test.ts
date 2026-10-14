@@ -118,6 +118,10 @@ describe('named stashes', () => {
     assert.equal(renamed.isDesktopEntry, true)
     assert.equal(renamed.tree, old.tree)
     assert.equal(renamed.createdAt?.getTime(), old.createdAt?.getTime())
+    // Time zone included, not just the instant.
+    const rawDate = (sha: string) =>
+      run(repo, 'show', '-s', '--format=%ad', '--date=raw', sha)
+    assert.equal(await rawDate(newSha), await rawDate(old.stashSha))
     assert.ok(after.some(e => e.title === 'cli'))
   })
 })

@@ -45,11 +45,13 @@ export async function renameStashEntry(
       ? title.trim()
       : createDesktopStashMessage(stash.branchName, title)
   }`
-  const date =
-    stash.createdAt !== undefined
-      ? `@${Math.floor(stash.createdAt.getTime() / 1000)} +0000`
-      : undefined
-  const env = date ? { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } : {}
+  // Raw date ("1760441859 -0300") keeps the original time zone too.
+  const { stdout: date } = await git(
+    ['show', '-s', '--format=%ad', '--date=raw', stash.stashSha],
+    repository.path,
+    'renameStashEntry'
+  )
+  const env = { GIT_AUTHOR_DATE: date.trim(), GIT_COMMITTER_DATE: date.trim() }
 
   const { stdout } = await git(
     [
