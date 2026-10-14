@@ -10,6 +10,9 @@ interface IBranchContextMenuConfig {
   onDeleteBranch?: (branchName: string) => void
   onCheckoutInNewWorktree?: (branch: Branch) => void
   onPullBranch?: (branch: Branch) => void
+  /** Simulates merging the branch into the current one. */
+  onCheckConflicts?: (branch: Branch) => void
+  currentBranchName?: string | null
 }
 
 export function generateBranchContextMenuItems(
@@ -23,8 +26,24 @@ export function generateBranchContextMenuItems(
     onDeleteBranch,
     onCheckoutInNewWorktree,
     onPullBranch,
+    onCheckConflicts,
+    currentBranchName,
   } = config
   const items = new Array<IMenuItem>()
+
+  if (
+    onCheckConflicts !== undefined &&
+    currentBranchName &&
+    branch.name !== currentBranchName
+  ) {
+    items.push(
+      {
+        label: `Check conflicts with ${currentBranchName}`,
+        action: () => onCheckConflicts(branch),
+      },
+      { type: 'separator' }
+    )
+  }
 
   if (
     onPullBranch !== undefined &&

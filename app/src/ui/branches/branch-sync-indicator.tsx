@@ -4,12 +4,17 @@ import { Repository } from '../../models/repository'
 import { AheadBehindStore } from '../../lib/stores/ahead-behind-store'
 import type { Disposable } from 'event-kit'
 import { TooltippedContent } from '../lib/tooltipped-content'
+import { Octicon } from '../octicons'
+import * as octicons from '../octicons/octicons.generated'
+import { formatCompactNumber } from '../../lib/format-number'
 
 interface IBranchSyncIndicatorProps {
   readonly repository: Repository
   readonly branch: Branch
   /** Where the branch's upstream (e.g. origin/main) is looked up. */
   readonly allBranches: ReadonlyArray<Branch>
+  /** Remote tips including tracked ones, which allBranches leaves out. */
+  readonly remoteTips?: ReadonlyMap<string, string>
   readonly aheadBehindStore: AheadBehindStore
 }
 
@@ -17,17 +22,24 @@ interface IBranchSyncIndicatorState {
   readonly aheadBehind?: IAheadBehind
 }
 
-function upstreamTip(branch: Branch, allBranches: ReadonlyArray<Branch>) {
-  if (branch.type !== BranchType.Local || branch.upstream === null) {
+/** A remote branch's tip. allBranches drops remotes tracked by a local branch. */
+export function remoteTip(
+  name: string | null,
+  remoteTips: ReadonlyMap<string, string> | undefined,
+  allBranches: ReadonlyArray<Branch>
+) {
+  if (name === null) {
     return undefined
   }
-  return allBranches.find(
-    b => b.type === BranchType.Remote && b.name === branch.upstream
-  )?.tip.sha
+  return (
+    remoteTips?.get(name) ??
+    allBranches.find(b => b.type === BranchType.Remote && b.name === name)?.tip
+      .sha
+  )
 }
 
 /**
- * `↓3 ↑1` next to a local branch: commits on its upstream it doesn't have yet,
+ * `1↑ 3↓` next to a local branch: commits on its upstream it doesn't have yet,
  * and commits of its own not pushed. Nothing when it is in sync.
  */
 export class BranchSyncIndicator extends React.Component<
@@ -55,8 +67,12 @@ export class BranchSyncIndicator extends React.Component<
   }
 
   private subscribe() {
-    const { repository, branch, allBranches, aheadBehindStore } = this.props
-    const to = upstreamTip(branch, allBranches)
+    const { repository, branch, allBranches, remoteTips, aheadBehindStore } =
+      this.props
+    const to =
+      branch.type === BranchType.Local
+        ? remoteTip(branch.upstream, remoteTips, allBranches)
+        : undefined
     const key = to === undefined ? null : `${branch.tip.sha}...${to}`
 
     if (key === this.comparing) {
@@ -94,9 +110,10 @@ export class BranchSyncIndicator extends React.Component<
     }
 
     const { ahead, behind } = aheadBehind
+    // Same order and look as the toolbar's Push/Pull badge: ahead, then behind.
     const title = [
-      behind > 0 ? `${behind} new on ${this.props.branch.upstream}` : null,
       ahead > 0 ? `${ahead} not pushed` : null,
+      behind > 0 ? `${behind} new on ${this.props.branch.upstream}` : null,
     ]
       .filter(x => x !== null)
       .join(', ')
@@ -107,8 +124,18 @@ export class BranchSyncIndicator extends React.Component<
         tagName="span"
         tooltip={title}
       >
-        {behind > 0 && <span className="behind">↓{behind}</span>}
-        {ahead > 0 && <span className="ahead">↑{ahead}</span>}
+        {ahead > 0 && (
+          <span className="ahead">
+            {formatCompactNumber(ahead)}
+            <Octicon symbol={octicons.arrowUp} />
+          </span>
+        )}
+        {behind > 0 && (
+          <span className="behind">
+            {formatCompactNumber(behind)}
+            <Octicon symbol={octicons.arrowDown} />
+          </span>
+        )}
       </TooltippedContent>
     )
   }

@@ -6,6 +6,9 @@ import { exec } from 'dugite'
 import { setupEmptyRepository } from '../helpers/repositories'
 import { Repository } from '../../src/models/repository'
 import { checkBranchAgainstMain } from '../../src/lib/git/main-conflicts'
+import { GitStore } from '../../src/lib/stores'
+import { shell } from '../helpers/test-app-shell'
+import { TestStatsStore } from '../helpers/test-stats-store'
 
 async function run(repo: Repository, ...args: string[]) {
   const r = await exec(args, repo.path)
@@ -49,6 +52,23 @@ describe('checkBranchAgainstMain', () => {
         [clean, []],
       ]
     )
+  })
+
+  // allBranches drops remote branches a local one tracks; the branch dropdown's
+  // ↓↑ and ⚠ need their tips anyway.
+  it('keeps the tips of tracked remote branches', async t => {
+    const repo = await setupEmptyRepository(t)
+    await run(repo, 'checkout', '-q', '-b', 'main')
+    const tip = await commit(repo, 'a.txt', 'x\n')
+    await run(repo, 'remote', 'add', 'origin', 'https://example.invalid/r.git')
+    await run(repo, 'update-ref', 'refs/remotes/origin/main', tip)
+    await run(repo, 'config', 'branch.main.remote', 'origin')
+    await run(repo, 'config', 'branch.main.merge', 'refs/heads/main')
+
+    const store = new GitStore(repo, shell, new TestStatsStore())
+    await store.loadBranches()
+    assert.ok(!store.allBranches.some(b => b.name === 'origin/main'))
+    assert.equal(store.remoteTips.get('origin/main'), tip)
   })
 
   it('does nothing without a remote main', async t => {

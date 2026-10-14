@@ -120,6 +120,7 @@ import { ConfirmDiscardStashDialog } from './stashing/confirm-discard-stash'
 import { ConfirmCheckoutCommitDialog } from './checkout/confirm-checkout-commit'
 import { SwitchAndPullDialog } from './branches/switch-and-pull-dialog'
 import { StashNameDialog } from './stashing/stash-name-dialog'
+import { BranchConflictCheckDialog } from './branches/branch-conflict-check-dialog'
 import { CreateTutorialRepositoryDialog } from './no-repositories/create-tutorial-repository-dialog'
 import { ConfirmExitTutorial } from './tutorial'
 import { TutorialStep, isValidTutorialStep } from '../models/tutorial-step'
@@ -2272,6 +2273,16 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.BranchConflictCheck:
+        return (
+          <BranchConflictCheckDialog
+            key="branch-conflict-check"
+            branchName={popup.branchName}
+            currentBranchName={popup.currentBranchName}
+            files={popup.files}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
       case PopupType.CreateStash:
       case PopupType.RenameStash: {
         return (

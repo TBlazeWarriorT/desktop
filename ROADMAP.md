@@ -7,7 +7,7 @@ notes are in `AGENTS.md`.
 
 1. [x] **Keep other branches up to date without switching to them.**
        - [x] Preview Pull Request fetches first, so its conflict check is current.
-       - [x] `↓3 ↑1` next to each branch in the dropdown (behind/ahead of its upstream).
+       - [x] `1↑ 3↓` next to each branch in the dropdown (ahead/behind its upstream, like the Push button).
        - [x] Right Click → Pull from origin on any branch: fast-forward, or merge
              (`merge-tree` + `commit-tree`) / rebase (`git replay`) per pull settings,
              without checkout. Conflicts → dialog offering to switch and pull.
@@ -35,6 +35,8 @@ notes are in `AGENTS.md`.
        not in the remote main (origin/HEAD, else origin/main or master) is checked with
        `git merge-tree --write-tree`, no checkout; conflicting ones get an orange alert
        with the files in its tooltip. Results are cached per commit and main.
+       - [x] Branch dropdown: ⚠ next to local branches whose latest commit would
+             conflict (two checks at a time, same cache).
        - [ ] Recheck right after a fetch moves origin/main (today: when the list reloads).
 7. [ ] **View whole files**, with the diff's syntax highlighting and line numbers but no
        add/remove coloring (not as "everything added"). Entry points:

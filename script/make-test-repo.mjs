@@ -23,11 +23,16 @@ const env = {
   GIT_COMMITTER_EMAIL: 'test-bot@example.invalid',
 }
 
+// A fake clock: every rebuild makes the same SHAs, so an app that still has the
+// old history loaded keeps working.
+let clock = Date.UTC(2026, 0, 5, 12) / 1000
+
 function git(...a) {
+  const date = `@${clock++} +0000`
   // stderr is piped: it only shows up in the thrown error when git fails.
   return execFileSync('git', a, {
     cwd: repo,
-    env,
+    env: { ...env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim()
@@ -283,6 +288,9 @@ on that file; type in the box to search within them; click the file chip to go b
 Switch to \`merge-me-conflict\` or \`pull/conflict\`: in History, their own commit gets
 an orange alert (hover: "Conflicts with origin/main if merged: npc/custom/healer.txt").
 \`pull/ahead\` changes other files, so it has no alert.
+
+The branch dropdown shows the same ⚠ next to \`merge-me-conflict\` and
+\`pull/conflict\` (their latest commit), from any branch.
 
 ## Branches and pulling without switching
 

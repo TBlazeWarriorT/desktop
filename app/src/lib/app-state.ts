@@ -709,6 +709,12 @@ export interface IBranchesState {
   readonly allBranches: ReadonlyArray<Branch>
 
   /**
+   * Tip SHA of every remote branch, by name (`origin/main`). Unlike
+   * allBranches, this includes the ones a local branch tracks.
+   */
+  readonly remoteTips?: ReadonlyMap<string, string>
+
+  /**
    * A list of zero to a few (at time of writing 5 but check loadRecentBranches
    * in git-store for definitive answer) branches that have been checked out
    * recently. This list is compiled by reading the reflog and tracking branch

@@ -71,6 +71,7 @@ export enum PopupType {
   SwitchAndPullBranch = 'SwitchAndPullBranch',
   CreateStash = 'CreateStash',
   RenameStash = 'RenameStash',
+  BranchConflictCheck = 'BranchConflictCheck',
   CreateTutorialRepository = 'CreateTutorialRepository',
   ConfirmExitTutorial = 'ConfirmExitTutorial',
   PushRejectedDueToMissingWorkflowScope = 'PushRejectedDueToMissingWorkflowScope',
@@ -304,6 +305,13 @@ export type PopupDetail =
       type: PopupType.CreateStash
       repository: Repository
       files?: ReadonlyArray<WorkingDirectoryFileChange>
+    }
+  | {
+      type: PopupType.BranchConflictCheck
+      repository: Repository
+      branchName: string
+      currentBranchName: string
+      files: ReadonlyArray<string>
     }
   | {
       type: PopupType.RenameStash

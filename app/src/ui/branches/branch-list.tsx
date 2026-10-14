@@ -137,6 +137,7 @@ interface IBranchListProps {
 
   /** Pulls the branch, checked out or not. */
   readonly onPullBranch?: (branch: Branch) => void
+  readonly onCheckConflicts?: (branch: Branch) => void
 }
 
 interface IBranchListState {
@@ -294,13 +295,15 @@ export class BranchList extends React.Component<
       onDeleteBranch,
       onCheckoutInNewWorktree,
       onPullBranch,
+      onCheckConflicts,
     } = this.props
 
     if (
       onRenameBranch === undefined &&
       onDeleteBranch === undefined &&
       onCheckoutInNewWorktree === undefined &&
-      onPullBranch === undefined
+      onPullBranch === undefined &&
+      onCheckConflicts === undefined
     ) {
       return
     }
@@ -313,6 +316,8 @@ export class BranchList extends React.Component<
       onDeleteBranch,
       onCheckoutInNewWorktree,
       onPullBranch,
+      onCheckConflicts,
+      currentBranchName: this.props.currentBranch?.name,
     })
 
     showContextualMenu(items)

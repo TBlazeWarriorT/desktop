@@ -41,6 +41,8 @@ import { Emoji } from '../../lib/emoji'
 import classNames from 'classnames'
 import { AheadBehindStore } from '../../lib/stores/ahead-behind-store'
 import { BranchSyncIndicator } from './branch-sync-indicator'
+import { BranchConflictIndicator } from './branch-conflict-indicator'
+import { checkBranchConflicts } from './check-branch-conflicts'
 import { pullBranch } from './pull-branch'
 
 interface IBranchesContainerProps {
@@ -48,6 +50,8 @@ interface IBranchesContainerProps {
   readonly repository: Repository
   readonly selectedTab: BranchesTab
   readonly allBranches: ReadonlyArray<Branch>
+  /** See IBranchesState.remoteTips. */
+  readonly remoteTips?: ReadonlyMap<string, string>
   readonly defaultBranch: Branch | null
   readonly currentBranch: Branch | null
   readonly recentBranches: ReadonlyArray<Branch>
@@ -244,20 +248,37 @@ export class BranchesContainer extends React.Component<
     )
   }
 
+  private onCheckConflicts = (branch: Branch) => {
+    const { dispatcher, repository, currentBranch } = this.props
+    checkBranchConflicts(dispatcher, repository, branch, currentBranch)
+  }
+
   private onPullBranch = (branch: Branch) => {
     const { dispatcher, repository, currentBranch } = this.props
     pullBranch(dispatcher, repository, branch, currentBranch)
   }
 
   private renderSyncIndicator(branch: Branch) {
-    const { aheadBehindStore, repository, allBranches } = this.props
-    return aheadBehindStore === undefined ? null : (
-      <BranchSyncIndicator
-        repository={repository}
-        branch={branch}
-        allBranches={allBranches}
-        aheadBehindStore={aheadBehindStore}
-      />
+    const { aheadBehindStore, repository, allBranches, remoteTips } = this.props
+    // A fixed column left of the date (see _branch-sync-indicator.scss).
+    return (
+      <span className="branch-row-accessory">
+        {aheadBehindStore && (
+          <BranchSyncIndicator
+            repository={repository}
+            branch={branch}
+            allBranches={allBranches}
+            remoteTips={remoteTips}
+            aheadBehindStore={aheadBehindStore}
+          />
+        )}
+        <BranchConflictIndicator
+          repository={repository}
+          branch={branch}
+          allBranches={allBranches}
+          remoteTips={remoteTips}
+        />
+      </span>
     )
   }
 
@@ -324,6 +345,7 @@ export class BranchesContainer extends React.Component<
                 : undefined
             }
             onPullBranch={this.onPullBranch}
+            onCheckConflicts={this.onCheckConflicts}
           />
         )
       case BranchesTab.PullRequests: {

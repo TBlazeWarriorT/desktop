@@ -1,18 +1,52 @@
-// ↓/↑ against the upstream in the branch list (branch-sync-indicator.tsx).
+// 2↑ 1↓ against the upstream in the branch list (branch-sync-indicator.tsx).
+// A fixed-width column just left of a fixed-width date, so the arrows line up
+// across rows; the free space stays between the name and the arrows.
+.branches-list-item {
+  .branch-row-accessory {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 72px;
+    margin-left: auto;
+  }
+
+  .branch-row-accessory + .description {
+    flex: 0 0 auto;
+    min-width: 84px;
+  }
+}
+
 .branch-sync-indicator {
+  display: flex;
   flex-shrink: 0;
-  margin: 0 var(--spacing-half);
+  gap: var(--spacing-half);
   font-size: var(--font-size-sm);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  color: var(--text-secondary-color);
 
+  .ahead,
   .behind {
-    color: var(--text-secondary-color);
-    font-weight: 600;
+    display: flex;
+    align-items: center;
   }
 
-  .ahead {
-    color: var(--text-secondary-color);
-    margin-left: var(--spacing-third);
+  .octicon {
+    height: 12px;
+    fill: currentColor;
+  }
+}
+
+// ⚠ when the branch would conflict with the remote main
+// (app/src/ui/branches/branch-conflict-indicator.tsx).
+.branch-conflict-indicator {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: var(--spacing-half);
+
+  .octicon {
+    fill: var(--color-conflicted);
   }
 }
