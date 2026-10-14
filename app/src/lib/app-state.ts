@@ -847,6 +847,9 @@ export interface IChangesState {
    */
   readonly stashEntry: IStashEntry | null
 
+  /** Every stash in the repository, newest first. */
+  readonly stashEntries: ReadonlyArray<IStashEntry>
+
   /**
    * The current selection state in the Changes view. Can be either
    * working directory or a stash. In the case of a working directory

@@ -18,7 +18,12 @@ notes are in `AGENTS.md`.
              "Conflict 2 of 5" and ↑↓ buttons (`ui/diff/conflict-view.tsx`).
        - [x] Leftover markers in files that are no longer conflicted get the alert icon
              in Changes (`git diff --check` limited to the changed files).
-3. [ ] **Named stashes:** list, names, apply/pop/drop, no per-branch overwrite.
+3. [x] **Named stashes:** list, names, apply/pop/drop, no per-branch overwrite.
+       - [x] "Stashes (n)" in Changes: every stash, other branches and `git stash` ones
+             included; Restore, Apply (keep), Rename, Discard.
+       - [x] Stash all changes asks for an optional name; Right Click files → Stash
+             selected files. Names go before Desktop's marker, so the official app
+             still reads them.
 4. [ ] **History search** by message, author and SHA.
 5. [ ] **File history:** Right Click a file → every commit that changed it
        (`git log --follow`).

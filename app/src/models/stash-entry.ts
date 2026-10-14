@@ -15,6 +15,13 @@ export interface IStashEntry {
 
   readonly tree: string
   readonly parents: ReadonlyArray<string>
+
+  /** The name given when stashing, or git's message for other stashes. */
+  readonly title?: string
+  /** Author date of the stash commit. */
+  readonly createdAt?: Date
+  /** False for stashes made outside Desktop (`git stash`). */
+  readonly isDesktopEntry?: boolean
 }
 
 /** Whether file changes for a stash entry are loaded or not */

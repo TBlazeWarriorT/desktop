@@ -26,9 +26,15 @@ export const DesktopStashEntryMarker = '!!GitHub_Desktop'
  */
 const desktopStashEntryMessageRe = /!!GitHub_Desktop<(.+)>$/
 
+/** `On <branch>: <message>` (git stash push) or `WIP on <branch>: <sha> <subject>`. */
+const stashMessageRe = /^(?:WIP on|On) (.+?): (.*)$/
+
 type StashResult = {
   /** The stash entries created by Desktop */
   readonly desktopEntries: ReadonlyArray<IStashEntry>
+
+  /** Every stash entry, newest first, including those made outside Desktop */
+  readonly allEntries: ReadonlyArray<IStashEntry>
 
   /**
    * The total amount of stash entries,
@@ -49,6 +55,7 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
     message: '%gs',
     tree: '%T',
     parents: '%P',
+    date: '%at',
   })
 
   const result = await git(
@@ -61,30 +68,39 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
   // There's no refs/stashes reflog in the repository or it's not
   // even a repository. In either case we don't care
   if (result.exitCode === 128) {
-    return { desktopEntries: [], stashEntryCount: 0 }
+    return { desktopEntries: [], allEntries: [], stashEntryCount: 0 }
   }
 
   const desktopEntries: Array<IStashEntry> = []
+  const allEntries: Array<IStashEntry> = []
   const files: StashedFileChanges = { kind: StashedChangesLoadStates.NotLoaded }
 
   const entries = parse(result.stdout)
 
-  for (const { name, message, stashSha, tree, parents } of entries) {
+  for (const { name, message, stashSha, tree, parents, date } of entries) {
     const branchName = extractBranchFromMessage(message)
+    const parsed = stashMessageRe.exec(message)
+    const entry: IStashEntry = {
+      name,
+      stashSha,
+      branchName: branchName ?? parsed?.[1] ?? '',
+      tree,
+      parents: parents.length > 0 ? parents.split(' ') : [],
+      files,
+      title: (parsed?.[2] ?? message)
+        .replace(desktopStashEntryMessageRe, '')
+        .trim(),
+      createdAt: new Date(parseInt(date, 10) * 1000),
+      isDesktopEntry: branchName !== null,
+    }
 
+    allEntries.push(entry)
     if (branchName !== null) {
-      desktopEntries.push({
-        name,
-        stashSha,
-        branchName,
-        tree,
-        parents: parents.length > 0 ? parents.split(' ') : [],
-        files,
-      })
+      desktopEntries.push(entry)
     }
   }
 
-  return { desktopEntries, stashEntryCount: entries.length - 1 }
+  return { desktopEntries, allEntries, stashEntryCount: entries.length - 1 }
 }
 
 /**
@@ -94,10 +110,13 @@ export async function getStashes(repository: Repository): Promise<StashResult> {
  */
 export async function moveStashEntry(
   repository: Repository,
-  { stashSha, parents, tree }: IStashEntry,
+  { stashSha, parents, tree, title }: IStashEntry,
   branchName: string
 ) {
-  const message = `On ${branchName}: ${createDesktopStashMessage(branchName)}`
+  const message = `On ${branchName}: ${createDesktopStashMessage(
+    branchName,
+    title
+  )}`
   const parentArgs = parents.flatMap(p => ['-p', p])
 
   const { stdout: commitId } = await git(
@@ -133,8 +152,10 @@ export async function getLastDesktopStashEntryForBranch(
 }
 
 /** Creates a stash entry message that indicates the entry was created by Desktop */
-export function createDesktopStashMessage(branchName: string) {
-  return `${DesktopStashEntryMarker}<${branchName}>`
+export function createDesktopStashMessage(branchName: string, title = '') {
+  // A title goes first so the official Desktop still reads the marker.
+  const marker = `${DesktopStashEntryMarker}<${branchName}>`
+  return title.trim() === '' ? marker : `${title.trim()} ${marker}`
 }
 
 /**
@@ -143,7 +164,11 @@ export function createDesktopStashMessage(branchName: string) {
 export async function createDesktopStashEntry(
   repository: Repository,
   branch: Branch | string,
-  untrackedFilesToStage: ReadonlyArray<WorkingDirectoryFileChange>
+  untrackedFilesToStage: ReadonlyArray<WorkingDirectoryFileChange>,
+  options: {
+    readonly title?: string
+    readonly paths?: ReadonlyArray<string>
+  } = {}
 ): Promise<boolean> {
   // We must ensure that no untracked files are present before stashing
   // See https://github.com/desktop/desktop/pull/8085
@@ -155,8 +180,13 @@ export async function createDesktopStashEntry(
   await stageFiles(repository, fullySelectedUntrackedFiles)
 
   const branchName = typeof branch === 'string' ? branch : branch.name
-  const message = createDesktopStashMessage(branchName)
-  const args = ['stash', 'push', '-m', message]
+  const message = createDesktopStashMessage(branchName, options.title)
+  const paths = options.paths ?? []
+  const args = [
+    ...(paths.length > 0 ? ['--literal-pathspecs'] : []),
+    ...['stash', 'push', '-m', message],
+    ...(paths.length > 0 ? ['--', ...paths] : []),
+  ]
 
   const result = await git(args, repository.path, 'createStashEntry').catch(
     e => {
@@ -208,7 +238,7 @@ export async function createDesktopStashEntry(
 
 async function getStashEntryMatchingSha(repository: Repository, sha: string) {
   const stash = await getStashes(repository)
-  return stash.desktopEntries.find(e => e.stashSha === sha) || null
+  return stash.allEntries.find(e => e.stashSha === sha) || null
 }
 
 /**

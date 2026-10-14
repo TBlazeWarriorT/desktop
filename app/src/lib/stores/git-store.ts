@@ -90,7 +90,11 @@ import { formatCommitMessage } from '../format-commit-message'
 import { GitAuthor } from '../../models/git-author'
 import { BaseStore } from './base-store'
 import { getStashes, getStashedFiles } from '../git/stash'
-import { IStashEntry, StashedChangesLoadStates } from '../../models/stash-entry'
+import {
+  IStashEntry,
+  StashedChangesLoadStates,
+  StashedFileChanges,
+} from '../../models/stash-entry'
 import { PullRequest } from '../../models/pull-request'
 import { IStatsStore } from '../stats'
 import { getTagsToPush, storeTagsToPush } from './helpers/tags-to-push-storage'
@@ -154,6 +158,10 @@ export class GitStore extends BaseStore {
   private _lastFetched: Date | null = null
 
   private _desktopStashEntries = new Map<string, IStashEntry>()
+  /** Every stash, newest first; files are loaded only for the shown one. */
+  private _stashEntries: ReadonlyArray<IStashEntry> = []
+  /** The stash picked in the list; null shows the branch's latest one. */
+  private _shownStashSha: string | null = null
 
   private _stashEntryCount = 0
 
@@ -1196,6 +1204,13 @@ export class GitStore extends BaseStore {
     const map = new Map<string, IStashEntry>()
     const stash = await getStashes(this.repository)
 
+    const loaded = new Map(this._stashEntries.map(e => [e.stashSha, e.files]))
+    this._stashEntries = [...stash.allEntries]
+      .map(e => ({ ...e, files: loaded.get(e.stashSha) ?? e.files }))
+      .sort(
+        (a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)
+      )
+
     for (const entry of stash.desktopEntries) {
       // we only want the first entry we find for each branch,
       // so we skip all subsequent ones
@@ -1225,9 +1240,34 @@ export class GitStore extends BaseStore {
    * null if no entry exists
    */
   public get currentBranchStashEntry() {
-    return this._tip && this._tip.kind === TipState.Valid
-      ? this._desktopStashEntries.get(this._tip.branch.name) || null
-      : null
+    const shown = this._stashEntries.find(
+      e => e.stashSha === this._shownStashSha
+    )
+    if (shown !== undefined) {
+      return shown
+    }
+    const latest =
+      this._tip && this._tip.kind === TipState.Valid
+        ? this._desktopStashEntries.get(this._tip.branch.name)
+        : undefined
+    // Same object as in the full list, so loaded files are shared.
+    return this._stashEntries.find(e => e.stashSha === latest?.stashSha) ?? null
+  }
+
+  /** Every stash in the repository, newest first. */
+  public get stashEntries(): ReadonlyArray<IStashEntry> {
+    return this._stashEntries
+  }
+
+  /** Makes this stash the one the stash view shows. */
+  public showStashEntry(stashSha: string) {
+    this._shownStashSha = stashSha
+    this.emitUpdate()
+    return this.loadFilesForCurrentStashEntry()
+  }
+
+  public get shownStashSha() {
+    return this._shownStashSha
   }
 
   public get desktopStashEntries(): ReadonlyMap<string, IStashEntry> {
@@ -1257,32 +1297,21 @@ export class GitStore extends BaseStore {
       return
     }
 
-    const { branchName } = stashEntry
-
-    this._desktopStashEntries.set(branchName, {
-      ...stashEntry,
-      files: { kind: StashedChangesLoadStates.Loading },
-    })
-    this.emitUpdate()
-
-    const files = await getStashedFiles(this.repository, stashEntry.stashSha)
-
-    // It's possible that we've refreshed the list of stash entries since we
-    // started getStashedFiles. Load the latest entry for the branch and make
-    // sure the SHAs match up.
-    const currentEntry = this._desktopStashEntries.get(branchName)
-
-    if (!currentEntry || currentEntry.stashSha !== stashEntry.stashSha) {
-      return
+    const { stashSha } = stashEntry
+    const setFiles = (files: StashedFileChanges) => {
+      this._stashEntries = this._stashEntries.map(e =>
+        e.stashSha === stashSha ? { ...e, files } : e
+      )
     }
 
-    this._desktopStashEntries.set(branchName, {
-      ...currentEntry,
-      files: {
-        kind: StashedChangesLoadStates.Loaded,
-        files,
-      },
-    })
+    setFiles({ kind: StashedChangesLoadStates.Loading })
+    this.emitUpdate()
+
+    const files = await getStashedFiles(this.repository, stashSha)
+
+    // The list may have been reloaded meanwhile; setFiles skips a stash
+    // that is gone.
+    setFiles({ kind: StashedChangesLoadStates.Loaded, files })
     this.emitUpdate()
   }
 

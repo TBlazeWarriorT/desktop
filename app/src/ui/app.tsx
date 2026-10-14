@@ -119,6 +119,7 @@ import { OverwriteStash } from './stash-changes/overwrite-stashed-changes-dialog
 import { ConfirmDiscardStashDialog } from './stashing/confirm-discard-stash'
 import { ConfirmCheckoutCommitDialog } from './checkout/confirm-checkout-commit'
 import { SwitchAndPullDialog } from './branches/switch-and-pull-dialog'
+import { StashNameDialog } from './stashing/stash-name-dialog'
 import { CreateTutorialRepositoryDialog } from './no-repositories/create-tutorial-repository-dialog'
 import { ConfirmExitTutorial } from './tutorial'
 import { TutorialStep, isValidTutorialStep } from '../models/tutorial-step'
@@ -2203,7 +2204,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       }
       case PopupType.StashAndSwitchBranch: {
         const { repository, branchToCheckout } = popup
-        const { branchesState, changesState } =
+        const { branchesState } =
           this.props.repositoryStateManager.get(repository)
         const { tip } = branchesState
 
@@ -2212,7 +2213,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         }
 
         const currentBranch = tip.branch
-        const hasAssociatedStash = changesState.stashEntry !== null
+        // Stashes no longer replace each other in this fork.
+        const hasAssociatedStash = false
 
         return (
           <StashAndSwitchBranch
@@ -2266,6 +2268,23 @@ export class App extends React.Component<IAppProps, IAppState> {
             }
             repository={repository}
             commit={commit}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.CreateStash:
+      case PopupType.RenameStash: {
+        return (
+          <StashNameDialog
+            key="stash-name-dialog"
+            dispatcher={this.props.dispatcher}
+            repository={popup.repository}
+            stash={
+              popup.type === PopupType.RenameStash ? popup.stash : undefined
+            }
+            files={
+              popup.type === PopupType.CreateStash ? popup.files : undefined
+            }
             onDismissed={onPopupDismissedFn}
           />
         )
@@ -2364,19 +2383,11 @@ export class App extends React.Component<IAppProps, IAppState> {
         )
       }
       case PopupType.LocalChangesOverwritten:
-        const selectedState = this.state.selectedState
-
-        const existingStash =
-          selectedState !== null &&
-          selectedState.type === SelectionType.Repository
-            ? selectedState.state.changesState.stashEntry
-            : null
-
         return (
           <LocalChangesOverwrittenDialog
             repository={popup.repository}
             dispatcher={this.props.dispatcher}
-            hasExistingStash={existingStash !== null}
+            hasExistingStash={false}
             retryAction={popup.retryAction}
             onDismissed={onPopupDismissedFn}
             files={popup.files}

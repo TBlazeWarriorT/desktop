@@ -2869,6 +2869,33 @@ export class Dispatcher {
     return this.appStore._dropStashEntry(repository, stashEntry)
   }
 
+  /** Stash the current branch's changes (or only `files`) under a name. */
+  public createStash(
+    repository: Repository,
+    title: string,
+    files?: ReadonlyArray<WorkingDirectoryFileChange>
+  ) {
+    return this.appStore._createStash(repository, title, files)
+  }
+
+  /** Show any stash, from any branch, in the stash view. */
+  public showStash(repository: Repository, stashEntry: IStashEntry) {
+    return this.appStore._showStashEntry(repository, stashEntry)
+  }
+
+  /** Apply the given stash and keep it. */
+  public applyStash(repository: Repository, stashEntry: IStashEntry) {
+    return this.appStore._applyStashEntry(repository, stashEntry)
+  }
+
+  public renameStash(
+    repository: Repository,
+    stashEntry: IStashEntry,
+    title: string
+  ) {
+    return this.appStore._renameStashEntry(repository, stashEntry, title)
+  }
+
   /** Pop the given stash in the given repository */
   public popStash(repository: Repository, stashEntry: IStashEntry) {
     return this.appStore._popStashEntry(repository, stashEntry)

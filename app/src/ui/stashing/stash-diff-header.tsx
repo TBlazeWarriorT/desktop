@@ -6,6 +6,8 @@ import { PopupType } from '../../models/popup'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { ErrorWithMetadata } from '../../lib/error-with-metadata'
 import { RetryActionType } from '../../models/retry-actions'
+import { Button } from '../lib/button'
+import { getStashTitle } from './stash-list'
 
 interface IStashDiffHeaderProps {
   readonly stashEntry: IStashEntry
@@ -17,6 +19,7 @@ interface IStashDiffHeaderProps {
 interface IStashDiffHeaderState {
   readonly isRestoring: boolean
   readonly isDiscarding: boolean
+  readonly isApplying: boolean
 }
 
 /**
@@ -33,29 +36,47 @@ export class StashDiffHeader extends React.Component<
     this.state = {
       isRestoring: false,
       isDiscarding: false,
+      isApplying: false,
     }
   }
 
   public render() {
-    const { isRestoring, isDiscarding } = this.state
+    const { isRestoring, isDiscarding, isApplying } = this.state
+    const busy = isRestoring || isDiscarding || isApplying
+    const { stashEntry } = this.props
 
     return (
       <div className="header">
-        <h3>Stashed changes</h3>
+        <h3>
+          {getStashTitle(stashEntry)}
+          {stashEntry.branchName && (
+            <span className="stash-header-branch">
+              {' '}
+              on {stashEntry.branchName}
+            </span>
+          )}
+        </h3>
         <div className="row">
           <OkCancelButtonGroup
             okButtonText="Restore"
-            okButtonDisabled={isRestoring || isDiscarding}
+            okButtonDisabled={busy}
             onOkButtonClick={this.onRestoreClick}
             cancelButtonText="Discard"
-            cancelButtonDisabled={isRestoring || isDiscarding}
+            cancelButtonDisabled={busy}
             onCancelButtonClick={this.onDiscardClick}
             okButtonAriaDescribedBy="restore-description"
           />
+          <Button
+            className="stash-apply-button"
+            disabled={busy}
+            onClick={this.onApplyClick}
+          >
+            Apply
+          </Button>
           <div className="explanatory-text" id="restore-description">
             <span className="text">
-              <strong>Restore</strong> will move your stashed files to the
-              Changes list.
+              <strong>Restore</strong> moves the stashed files to the Changes
+              list; <strong>Apply</strong> copies them and keeps the stash.
             </span>
           </div>
         </div>
@@ -89,6 +110,16 @@ export class StashDiffHeader extends React.Component<
         stash: stashEntry,
         repository,
       })
+    }
+  }
+
+  private onApplyClick = async () => {
+    const { dispatcher, repository, stashEntry } = this.props
+    this.setState({ isApplying: true })
+    try {
+      await dispatcher.applyStash(repository, stashEntry)
+    } finally {
+      this.setState({ isApplying: false })
     }
   }
 

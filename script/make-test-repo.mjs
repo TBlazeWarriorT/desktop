@@ -248,6 +248,15 @@ and nothing reaches GitHub.
 - A real merge conflict: Branch > Merge into current branch > \`merge-me-conflict\`.
   Abort it afterwards (or rebuild the repo).
 
+## Stashes
+
+- Below the changed files: "Stashes (4)". The current branch's come first; the
+  one from \`pull/ahead\` shows its branch; one was made with \`git stash\` in a terminal.
+- Click one to see its files. Restore (apply + delete), Apply (keep it), Discard.
+- Right Click a stash: Restore, Apply, Rename…, Discard….
+- Stash all changes (Ctrl+Shift+S) asks for an optional name and never replaces
+  an older stash. Right Click files > Stash file… stashes only those.
+
 ## Branches and pulling without switching
 
 Open the branch dropdown: each branch shows ↓behind ↑ahead of \`origin\`.
@@ -384,6 +393,29 @@ commit('Change the heal price differently', {
 git('checkout', '-q', 'main')
 commit('Lower the heal price', { 'npc/custom/healer.txt': healer(400) })
 git('push', '-q', 'origin', 'main')
+
+// --- Stashes -----------------------------------------------------------------
+
+/** Desktop's stash message: an optional name, then the branch marker. */
+function stash(branch, title, files) {
+  for (const [path, content] of Object.entries(files)) {
+    write(path, content)
+  }
+  const marker = `!!GitHub_Desktop<${branch}>`
+  git('stash', 'push', '-q', '-m', title ? `${title} ${marker}` : marker)
+}
+
+git('checkout', '-q', 'pull/ahead')
+stash('pull/ahead', 'README wording', {
+  'README.md': readme('| Stash | from another branch |\n'),
+})
+git('checkout', '-q', 'main')
+stash('main', '', {
+  'src/notes.txt': 'An unnamed stash, as Desktop made them.\n',
+})
+write('npc/other/functions.txt', functions.replace('240000', '60000'))
+git('stash', 'push', '-q', '-m', 'Experiment from the terminal')
+stash('main', 'Cheaper heal idea', { 'npc/custom/healer.txt': healer(100) })
 write(
   'npc/custom/healer.txt',
   healer(450).replace(

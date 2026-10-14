@@ -244,6 +244,7 @@ import {
   HookProgress,
   git,
 } from '../git'
+import { applyStashEntry, renameStashEntry } from '../git/stash-extras'
 import {
   installGlobalLFSFilters,
   installLFSHooks,
@@ -1446,8 +1447,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
             selectWorkingDirectory = true
           } else if (state.stashEntry.stashSha !== stashEntry.stashSha) {
             // The current stash entry has changed from underneath so we must
-            // ensure we have a valid selection.
-            selectStashEntry = true
+            // ensure we have a valid selection. If it was restored or
+            // discarded, go back to the changes instead of another stash.
+            const stillExists = gitStore.stashEntries.some(
+              e => e.stashSha === state.stashEntry?.stashSha
+            )
+            selectWorkingDirectory = !stillExists
+            selectStashEntry = stillExists
           }
         }
       }
@@ -1457,6 +1463,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         showCoAuthoredBy: gitStore.showCoAuthoredBy,
         coAuthors: gitStore.coAuthors,
         stashEntry,
+        stashEntries: gitStore.stashEntries,
       }
     })
 
@@ -2923,8 +2930,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const isStashedChangesVisible =
       changesState.selection.kind === ChangesSelectionKind.Stash
 
-    const askForConfirmationWhenStashingAllChanges =
-      changesState.stashEntry !== null
+    // Stashing always opens the name dialog.
+    const askForConfirmationWhenStashingAllChanges = true
 
     updatePreferredAppMenuItemLabels({
       ...labels,
@@ -4600,7 +4607,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   ): Promise<Repository> {
     const repositoryState = this.repositoryStateCache.get(repository)
     const { changesState, branchesState } = repositoryState
-    const { currentBranchProtected, stashEntry } = changesState
+    const { currentBranchProtected } = changesState
     const { tip } = branchesState
     const hasChanges = changesState.workingDirectory.files.length > 0
 
@@ -4631,19 +4638,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     let strategy = explicitStrategy ?? this.uncommittedChangesStrategy
-
-    // The user hasn't been presented with an explicit choice
-    if (explicitStrategy === undefined) {
-      // Even if the user has chosen to "always stash on current branch" in
-      // preferences we still want to let them know changes might be lost
-      if (strategy === UncommittedChangesStrategy.StashOnCurrentBranch) {
-        if (hasChanges && stashEntry !== null) {
-          const type = PopupType.ConfirmOverwriteStash
-          this._showPopup({ type, repository, branchToCheckout: branch })
-          return repository
-        }
-      }
-    }
 
     // Always move changes to new branch if we're on a detached head, unborn
     // branch, or a protected branch.
@@ -4869,18 +4863,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const repositoryState = this.repositoryStateCache.get(repository)
     const tip = repositoryState.branchesState.tip
     const currentBranch = tip.kind === TipState.Valid ? tip.branch : null
-    const hasExistingStash = repositoryState.changesState.stashEntry !== null
 
     if (currentBranch === null) {
       return false
     }
 
-    if (showConfirmationDialog && hasExistingStash) {
-      this._showPopup({
-        type: PopupType.ConfirmOverwriteStash,
-        branchToCheckout: null,
-        repository,
-      })
+    // Stashes no longer overwrite each other; the dialog asks for a name.
+    if (showConfirmationDialog) {
+      this._showPopup({ type: PopupType.CreateStash, repository })
       return false
     }
 
@@ -5033,9 +5023,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     await gitStore.performFailableOperation(async () => {
       await renameBranch(repository, branch, newName)
 
-      const stashEntry = gitStore.desktopStashEntries.get(branch.name)
-
-      if (stashEntry) {
+      const stashes = gitStore.stashEntries.filter(
+        e => e.isDesktopEntry && e.branchName === branch.name
+      )
+      for (const stashEntry of stashes) {
         await moveStashEntry(repository, stashEntry, newName)
       }
     })
@@ -9026,21 +9017,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     branch: Branch
   ) {
-    const entry = await getLastDesktopStashEntryForBranch(repository, branch)
+    // Stashes accumulate instead of replacing the branch's previous one.
     const gitStore = this.gitStoreCache.get(repository)
-
     const createdStash = await gitStore.performFailableOperation(() =>
       this.createStashEntry(repository, branch)
     )
-
-    if (createdStash === true && entry !== null) {
-      const { stashSha, branchName } = entry
-      await gitStore.performFailableOperation(async () => {
-        await dropDesktopStashEntry(repository, stashSha)
-        log.info(`Dropped stash '${stashSha}' associated with ${branchName}`)
-      })
-    }
-
     return createdStash === true
   }
 
@@ -9050,6 +9031,74 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const untrackedFiles = getUntrackedFiles(workingDirectory)
 
     return createDesktopStashEntry(repository, branch, untrackedFiles)
+  }
+
+  /**
+   * Stashes the current branch's changes, or only `files`, under an optional
+   * name. This shouldn't be called directly. See `Dispatcher`.
+   */
+  public async _createStash(
+    repository: Repository,
+    title: string,
+    files?: ReadonlyArray<WorkingDirectoryFileChange>
+  ): Promise<boolean> {
+    const { branchesState, changesState } =
+      this.repositoryStateCache.get(repository)
+    const { tip } = branchesState
+    if (tip.kind !== TipState.Valid) {
+      return false
+    }
+
+    const paths = files?.map(f => f.path)
+    const untracked = getUntrackedFiles(changesState.workingDirectory).filter(
+      f => paths === undefined || paths.includes(f.path)
+    )
+    const gitStore = this.gitStoreCache.get(repository)
+    const created = await gitStore.performFailableOperation(() =>
+      createDesktopStashEntry(repository, tip.branch, untracked, {
+        title,
+        paths,
+      })
+    )
+    if (created === true) {
+      this.statsStore.increment('stashCreatedOnCurrentBranchCount')
+      await this._refreshRepository(repository)
+    }
+    return created === true
+  }
+
+  /** Shows any stash in the stash view. See `Dispatcher`. */
+  public async _showStashEntry(repository: Repository, stash: IStashEntry) {
+    const gitStore = this.gitStoreCache.get(repository)
+    const loaded = gitStore.showStashEntry(stash.stashSha)
+    await this._selectStashedFile(repository)
+    await loaded
+    await this._selectStashedFile(repository)
+  }
+
+  /** Applies a stash and keeps it. See `Dispatcher`. */
+  public async _applyStashEntry(repository: Repository, stash: IStashEntry) {
+    const gitStore = this.gitStoreCache.get(repository)
+    await gitStore.performFailableOperation(() =>
+      applyStashEntry(repository, stash.stashSha)
+    )
+    await this._refreshRepository(repository)
+  }
+
+  /** See `Dispatcher`. */
+  public async _renameStashEntry(
+    repository: Repository,
+    stash: IStashEntry,
+    title: string
+  ) {
+    const gitStore = this.gitStoreCache.get(repository)
+    const newSha = await gitStore.performFailableOperation(() =>
+      renameStashEntry(repository, stash, title)
+    )
+    await gitStore.loadStashEntries()
+    if (newSha !== undefined && gitStore.shownStashSha === stash.stashSha) {
+      await gitStore.showStashEntry(newSha)
+    }
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */

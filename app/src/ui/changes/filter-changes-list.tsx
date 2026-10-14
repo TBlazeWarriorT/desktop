@@ -57,6 +57,7 @@ import { EOL } from 'os'
 import { RepoRulesInfo } from '../../models/repo-rules'
 import { IAheadBehind } from '../../models/branch'
 import { StashDiffViewerId } from '../stashing'
+import { StashList } from '../stashing/stash-list'
 import { AugmentedSectionFilterList } from '../lib/augmented-filter-list'
 import { IFilterListGroup, IFilterListItem } from '../lib/filter-list'
 import { ClickSource } from '../lib/list'
@@ -203,6 +204,7 @@ interface IFilterChangesListProps {
   readonly externalEditorLabel?: string
 
   readonly stashEntry: IStashEntry | null
+  readonly stashEntries: ReadonlyArray<IStashEntry>
 
   readonly isShowingStashEntry: boolean
 
@@ -541,14 +543,11 @@ export class FilterChangesList extends React.Component<
     }
 
     const hasLocalChanges = this.props.workingDirectory.files.length > 0
-    const hasStash = this.props.stashEntry !== null
     const hasConflicts =
       this.props.conflictState !== null ||
       hasConflictedFiles(this.props.workingDirectory)
 
-    const stashAllChangesLabel = __DARWIN__
-      ? 'Stash All Changes'
-      : 'Stash all changes'
+    // Always opens the stash name dialog.
     const confirmStashAllChangesLabel = __DARWIN__
       ? 'Stash All Changes…'
       : 'Stash all changes…'
@@ -560,13 +559,41 @@ export class FilterChangesList extends React.Component<
         enabled: hasLocalChanges,
       },
       {
-        label: hasStash ? confirmStashAllChangesLabel : stashAllChangesLabel,
+        label: confirmStashAllChangesLabel,
         action: this.onStashChanges,
         enabled: hasLocalChanges && this.props.branch !== null && !hasConflicts,
       },
     ]
 
     showContextualMenu(items)
+  }
+
+  private getStashFilesMenuItem(
+    files: ReadonlyArray<WorkingDirectoryFileChange>
+  ): IMenuItem {
+    const { dispatcher, repository, branch, conflictState, workingDirectory } =
+      this.props
+    const label =
+      files.length === 1
+        ? __DARWIN__
+          ? 'Stash File…'
+          : 'Stash file…'
+        : __DARWIN__
+        ? `Stash ${files.length} Selected Files…`
+        : `Stash ${files.length} selected files…`
+    return {
+      label,
+      action: () =>
+        dispatcher.showPopup({
+          type: PopupType.CreateStash,
+          repository,
+          files,
+        }),
+      enabled:
+        branch !== null &&
+        conflictState === null &&
+        !hasConflictedFiles(workingDirectory),
+    }
   }
 
   private getDiscardChangesMenuItem = (
@@ -693,6 +720,7 @@ export class FilterChangesList extends React.Component<
 
     const items: IMenuItem[] = [
       this.getDiscardChangesMenuItem(paths),
+      this.getStashFilesMenuItem(selectedFiles),
       { type: 'separator' },
     ]
     if (paths.length === 1) {
@@ -1103,6 +1131,21 @@ export class FilterChangesList extends React.Component<
   }
 
   private renderStashedChanges() {
+    return (
+      <StashList
+        dispatcher={this.props.dispatcher}
+        repository={this.props.repository}
+        stashEntries={this.props.stashEntries}
+        shownStash={this.props.stashEntry}
+        isShowingStash={this.props.isShowingStashEntry}
+        currentBranchName={this.props.branch}
+        icon={StashIcon}
+      />
+    )
+  }
+
+  /** Upstream's single-stash button, replaced by `StashList`. */
+  protected renderStashedChangesButton() {
     if (this.props.stashEntry === null) {
       return null
     }

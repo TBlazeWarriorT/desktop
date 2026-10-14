@@ -69,6 +69,8 @@ export enum PopupType {
   ConfirmDiscardStash = 'ConfirmDiscardStash',
   ConfirmCheckoutCommit = 'ConfirmCheckoutCommit',
   SwitchAndPullBranch = 'SwitchAndPullBranch',
+  CreateStash = 'CreateStash',
+  RenameStash = 'RenameStash',
   CreateTutorialRepository = 'CreateTutorialRepository',
   ConfirmExitTutorial = 'ConfirmExitTutorial',
   PushRejectedDueToMissingWorkflowScope = 'PushRejectedDueToMissingWorkflowScope',
@@ -297,6 +299,16 @@ export type PopupDetail =
       type: PopupType.ConfirmCheckoutCommit
       repository: Repository
       commit: CommitOneLine
+    }
+  | {
+      type: PopupType.CreateStash
+      repository: Repository
+      files?: ReadonlyArray<WorkingDirectoryFileChange>
+    }
+  | {
+      type: PopupType.RenameStash
+      repository: Repository
+      stash: IStashEntry
     }
   | {
       type: PopupType.SwitchAndPullBranch
