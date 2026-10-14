@@ -13,8 +13,6 @@ const inputs = [
   'yarn.lock',
   'app/package.json',
   'app/yarn.lock',
-  'app/webpack.common.ts',
-  'app/webpack.development.ts',
   'script/build.ts',
   'app/static',
 ]

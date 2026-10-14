@@ -6,6 +6,8 @@ import merge from 'webpack-merge'
 const config: webpack.Configuration = {
   mode: 'development',
   devtool: 'source-map',
+  // transpileOnly can't tell type-only re-exports (interfaces) apart.
+  ignoreWarnings: [/export 'I[A-Z]\w*' \(reexported as/],
 }
 
 const mainConfig = merge({}, common.main, config)
@@ -87,11 +89,24 @@ const crashConfig = merge({}, common.crash, config, {
   },
 })
 
+// Persistent cache, so a restart only recompiles what changed since last time.
+const withCache = (
+  name: string,
+  c: webpack.Configuration
+): webpack.Configuration => ({
+  ...c,
+  cache: {
+    type: 'filesystem',
+    name,
+    buildDependencies: { config: [__filename] },
+  },
+})
+
 // eslint-disable-next-line no-restricted-syntax
 export default [
-  mainConfig,
-  rendererConfig,
-  crashConfig,
-  cliConfig,
-  highlighterConfig,
+  withCache('main', mainConfig),
+  withCache('renderer', rendererConfig),
+  withCache('crash', crashConfig),
+  withCache('cli', cliConfig),
+  withCache('highlighter', highlighterConfig),
 ]

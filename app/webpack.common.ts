@@ -11,6 +11,18 @@ export const externals = ['7zip']
 const outputDir = 'out'
 export const replacements = getReplacements()
 
+// Dev builds skip type checking (5 parallel full checks were the bulk of the
+// startup time); preserveConstEnums keeps cross-file const enums working.
+const tsLoaderOptions =
+  process.env.NODE_ENV === 'development'
+    ? {
+        transpileOnly: true,
+        compilerOptions: { preserveConstEnums: true },
+        // TS5011 (rootDir layout) is meaningless here, webpack does the output.
+        ignoreDiagnostics: [5011],
+      }
+    : {}
+
 const commonConfig: webpack.Configuration = {
   optimization: {
     emitOnErrors: false,
@@ -32,6 +44,7 @@ const commonConfig: webpack.Configuration = {
         use: [
           {
             loader: 'ts-loader',
+            options: tsLoaderOptions,
           },
         ],
         exclude: /node_modules/,
@@ -216,6 +229,7 @@ highlighter.module!.rules = [
       {
         loader: 'ts-loader',
         options: {
+          ...tsLoaderOptions,
           configFile: path.resolve(__dirname, 'src/highlighter/tsconfig.json'),
         },
       },
