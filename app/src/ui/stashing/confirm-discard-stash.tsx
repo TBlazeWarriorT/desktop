@@ -4,6 +4,7 @@ import { Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
 import { Row } from '../lib/row'
 import { IStashEntry } from '../../models/stash-entry'
+import { getStashTitle } from './stash-list'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
 
@@ -52,7 +53,14 @@ export class ConfirmDiscardStashDialog extends React.Component<
       >
         <DialogContent>
           <Row id="discard-stash-warning-message">
-            Are you sure you want to discard these stashed changes?
+            {/* A span: Row is a flex box, which drops the spaces. */}
+            <span>
+              Are you sure you want to discard{' '}
+              <strong>{getStashTitle(this.props.stash)}</strong>
+              {this.props.stash.branchName &&
+                ` (on ${this.props.stash.branchName})`}
+              ? This can't be undone.
+            </span>
           </Row>
           <Row>
             <Checkbox
