@@ -9,6 +9,9 @@ import { TooltipDirection } from '../lib/tooltip'
 import { TooltippedContent } from '../lib/tooltipped-content'
 import { AriaLiveContainer } from '../accessibility/aria-live-container'
 import { IMatches } from '../../lib/fuzzy-find'
+import { AppFileStatusKind } from '../../models/status'
+import { getConflictMarkerCount } from '../../lib/conflict-markers'
+import * as octicons from '../octicons/octicons.generated'
 
 interface IChangedFileProps {
   readonly file: WorkingDirectoryFileChange
@@ -53,6 +56,9 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
     } = this.props
     const { status, path } = file
     const fileStatus = mapStatus(status)
+    const leftoverMarkers =
+      status.kind !== AppFileStatusKind.Conflicted &&
+      getConflictMarkerCount(status) > 0
 
     const listItemPadding = 10 * 2
     const checkboxWidth = 20
@@ -107,12 +113,15 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
         <TooltippedContent
           ancestorFocused={focused}
           openOnFocus={true}
-          tooltip={fileStatus}
+          tooltip={leftoverMarkers ? 'Leftover conflict markers' : fileStatus}
           direction={TooltipDirection.EAST}
         >
           <Octicon
-            symbol={iconForStatus(status)}
-            className={'status status-' + fileStatus.toLowerCase()}
+            symbol={leftoverMarkers ? octicons.alert : iconForStatus(status)}
+            className={
+              'status status-' +
+              (leftoverMarkers ? 'conflicted' : fileStatus.toLowerCase())
+            }
           />
         </TooltippedContent>
       </div>

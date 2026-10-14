@@ -35,6 +35,8 @@ export type PlainFileStatus = {
     | AppFileStatusKind.Modified
     | AppFileStatusKind.Deleted
   submoduleStatus?: SubmoduleStatus
+  /** Leftover conflict marker lines in a file that is no longer conflicted. */
+  conflictMarkerCount?: number
 }
 
 /**

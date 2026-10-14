@@ -12,8 +12,12 @@ notes are in `AGENTS.md`.
              (`merge-tree` + `commit-tree`) / rebase (`git replay`) per pull settings,
              without checkout. Conflicts → dialog offering to switch and pull.
        - [x] One-click "switch and pull" on conflicts instead of a plain message.
-2. [ ] **Conflicts A:** find, count, navigate and display conflict markers in any
+2. [x] **Conflicts A:** find, count, navigate and display conflict markers in any
        uncommitted file (read-only, with syntax highlighting).
+       - [x] Conflicts/Diff toggle: the whole file with current/incoming blocks colored,
+             "Conflict 2 of 5" and ↑↓ buttons (`ui/diff/conflict-view.tsx`).
+       - [x] Leftover markers in files that are no longer conflicted get the alert icon
+             in Changes (`git diff --check` limited to the changed files).
 3. [ ] **Named stashes:** list, names, apply/pop/drop, no per-branch overwrite.
 4. [ ] **History search** by message, author and SHA.
 5. [ ] **File history:** Right Click a file → every commit that changed it

@@ -372,6 +372,12 @@ body.theme-dark {
   --rathena-npc-name-color: #ffc66d;
   --rathena-function-color: #ffc66d;
 
+  --conflict-current-background: rgba(63, 185, 80, 0.15);
+  --conflict-incoming-background: rgba(56, 139, 253, 0.15);
+  --conflict-base-background: rgba(163, 113, 247, 0.12);
+  --conflict-marker-background: rgba(187, 128, 9, 0.25);
+  --conflict-active-border: #d29922;
+
   // Colors for form errors
   --error-color: #{$red};
   --form-error-background: #{darken($red-900, 3%)};

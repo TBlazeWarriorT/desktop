@@ -469,6 +469,13 @@ $overlay-background-color: rgba(0, 0, 0, 0.4);
   --rathena-npc-name-color: #00627a;
   --rathena-function-color: #00627a;
 
+  // Conflict view blocks (app/src/ui/diff/conflict-view.tsx)
+  --conflict-current-background: rgba(46, 160, 67, 0.14);
+  --conflict-incoming-background: rgba(9, 105, 218, 0.12);
+  --conflict-base-background: rgba(130, 80, 223, 0.1);
+  --conflict-marker-background: rgba(191, 135, 0, 0.22);
+  --conflict-active-border: #bf8700;
+
   // Note that this duration *must* match the `UndoCommitAnimationTimeout`
   // specified in `changes/index.tsx`.
   --undo-animation-duration: 500ms;

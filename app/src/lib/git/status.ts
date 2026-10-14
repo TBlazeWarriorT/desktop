@@ -126,6 +126,11 @@ function parseConflictedState(
   }
 }
 
+const leftoverMarkers = (path: string, details: ConflictFilesDetails) => {
+  const count = details.conflictCountsByPath.get(path)
+  return count === undefined ? {} : { conflictMarkerCount: count }
+}
+
 function convertToAppStatus(
   path: string,
   entry: FileEntry,
@@ -138,11 +143,13 @@ function convertToAppStatus(
         return {
           kind: AppFileStatusKind.New,
           submoduleStatus: entry.submoduleStatus,
+          ...leftoverMarkers(path, conflictDetails),
         }
       case 'modified':
         return {
           kind: AppFileStatusKind.Modified,
           submoduleStatus: entry.submoduleStatus,
+          ...leftoverMarkers(path, conflictDetails),
         }
       case 'deleted':
         return {
@@ -244,7 +251,8 @@ export async function getStatus(
     repository,
     mergeHeadFound,
     conflictedFilesInIndex,
-    rebaseInternalState
+    rebaseInternalState,
+    entries.filter(e => e.statusCode !== '??').map(e => e.path)
   )
 
   // Map of files keyed on their paths.
@@ -469,7 +477,8 @@ async function getConflictDetails(
   repository: Repository,
   mergeHeadFound: boolean,
   conflictedFilesInIndex: ReadonlyArray<IStatusEntry>,
-  rebaseInternalState: RebaseInternalState | null
+  rebaseInternalState: RebaseInternalState | null,
+  trackedChangedPaths: ReadonlyArray<string>
 ): Promise<ConflictFilesDetails> {
   try {
     if (mergeHeadFound) {
@@ -496,7 +505,11 @@ async function getConflictDetails(
     )
   }
   return {
-    conflictCountsByPath: new Map<string, number>(),
+    // Leftover markers in files that are not conflicted.
+    conflictCountsByPath: await getFilesWithConflictMarkers(
+      repository.path,
+      trackedChangedPaths
+    ).catch(() => new Map<string, number>()),
     binaryFilePaths: new Array<string>(),
   }
 }

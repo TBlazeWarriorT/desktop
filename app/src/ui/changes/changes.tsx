@@ -18,6 +18,12 @@ import {
   getMarkdownPreview,
   setMarkdownPreview,
 } from '../diff/markdown-preview'
+import {
+  ConflictView,
+  getConflictView,
+  setConflictView,
+} from '../diff/conflict-view'
+import { getConflictMarkerCount } from '../../lib/conflict-markers'
 
 interface IChangesProps {
   readonly repository: Repository
@@ -66,12 +72,16 @@ interface IChangesProps {
 
 interface IChangesState {
   readonly markdownPreview: boolean
+  readonly conflictView: boolean
 }
 
 export class Changes extends React.Component<IChangesProps, IChangesState> {
   public constructor(props: IChangesProps) {
     super(props)
-    this.state = { markdownPreview: getMarkdownPreview() }
+    this.state = {
+      markdownPreview: getMarkdownPreview(),
+      conflictView: getConflictView(),
+    }
   }
 
   /**
@@ -130,13 +140,34 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
           onDiffOptionsOpened={this.props.onDiffOptionsOpened}
           markdownPreview={this.state.markdownPreview}
           onMarkdownPreviewChanged={this.onMarkdownPreviewChanged}
+          conflictView={this.state.conflictView}
+          onConflictViewChanged={this.onConflictViewChanged}
         />
 
-        {this.state.markdownPreview && isMarkdownFile(this.props.file.path)
-          ? this.renderMarkdownPreview()
-          : this.renderDiff()}
+        {this.renderContent()}
       </div>
     )
+  }
+
+  private renderContent() {
+    const { file } = this.props
+    if (this.state.conflictView && getConflictMarkerCount(file.status) > 0) {
+      return (
+        <ConflictView
+          repository={this.props.repository}
+          file={file}
+          diff={this.props.diff}
+        />
+      )
+    }
+    return this.state.markdownPreview && isMarkdownFile(file.path)
+      ? this.renderMarkdownPreview()
+      : this.renderDiff()
+  }
+
+  private onConflictViewChanged = (conflictView: boolean) => {
+    setConflictView(conflictView)
+    this.setState({ conflictView })
   }
 
   private renderMarkdownPreview() {

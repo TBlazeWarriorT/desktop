@@ -7,6 +7,7 @@ import { mapStatus } from '../../lib/status'
 import { DiffOptions } from './diff-options'
 import { Button } from '../lib/button'
 import { isMarkdownFile } from '../../lib/markdown-files'
+import { getConflictMarkerCount } from '../../lib/conflict-markers'
 import * as octicons from '../octicons/octicons.generated'
 
 interface IDiffHeaderProps {
@@ -32,6 +33,10 @@ interface IDiffHeaderProps {
   /** Whether a markdown file is shown rendered instead of as a diff. */
   readonly markdownPreview?: boolean
   readonly onMarkdownPreviewChanged?: (preview: boolean) => void
+
+  /** Whether a file with conflict markers is shown in the conflict view. */
+  readonly conflictView?: boolean
+  readonly onConflictViewChanged?: (conflictView: boolean) => void
 }
 
 /** Displays information about a file */
@@ -44,6 +49,7 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
       <div className="header">
         <PathLabel path={this.props.path} status={this.props.status} />
 
+        {this.renderConflictToggle()}
         {this.renderMarkdownToggle()}
         {this.renderDiffOptions()}
 
@@ -67,7 +73,7 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
 
     return (
       <Button
-        className="markdown-preview-toggle"
+        className="view-toggle"
         size="small"
         ariaPressed={markdownPreview === true}
         onClick={this.onMarkdownToggleClick}
@@ -77,6 +83,33 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
         {markdownPreview ? 'Diff' : 'Preview'}
       </Button>
     )
+  }
+
+  private renderConflictToggle() {
+    const { conflictView, onConflictViewChanged, status } = this.props
+    if (
+      onConflictViewChanged === undefined ||
+      getConflictMarkerCount(status) === 0
+    ) {
+      return null
+    }
+
+    return (
+      <Button
+        className="view-toggle"
+        size="small"
+        ariaPressed={conflictView === true}
+        onClick={this.onConflictToggleClick}
+        tooltip={conflictView ? 'Show the diff' : 'Show the conflicts'}
+      >
+        <Octicon symbol={conflictView ? octicons.diff : octicons.alert} />
+        {conflictView ? 'Diff' : 'Conflicts'}
+      </Button>
+    )
+  }
+
+  private onConflictToggleClick = () => {
+    this.props.onConflictViewChanged?.(this.props.conflictView !== true)
   }
 
   private onMarkdownToggleClick = () => {
