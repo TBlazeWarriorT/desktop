@@ -170,7 +170,14 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
     })
     switch (getCurrentViewMode(modes, this.state)) {
       case 'conflicts':
-        return <ConflictView repository={repository} file={file} diff={diff} />
+        return (
+          <ConflictView
+            repository={repository}
+            file={file}
+            diff={diff}
+            dispatcher={this.props.dispatcher}
+          />
+        )
       case 'preview':
         return this.renderMarkdownPreview()
       case 'file':

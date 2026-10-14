@@ -483,7 +483,8 @@ export function getDescriptionForError(
       return 'We found some conflicts while trying to merge. Please resolve the conflicts and commit the changes.'
     case DugiteError.HTTPSRepositoryNotFound:
     case DugiteError.SSHRepositoryNotFound:
-      return 'The repository does not seem to exist anymore. You may not have access, or it may have been deleted or renamed.'
+      // GitHub answers "not found" when access is denied, e.g. by an org's OAuth app restrictions.
+      return "Could not reach the repository: you may not have access (on GitHub, this includes an organization that hasn't approved this app's sign-in), or it may have been deleted or renamed."
     case DugiteError.PushNotFastForward:
       return 'The repository has been updated since you last pulled. Try pulling before pushing.'
     case DugiteError.BranchDeletionFailed:

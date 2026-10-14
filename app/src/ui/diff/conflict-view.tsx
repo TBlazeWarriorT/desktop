@@ -20,6 +20,8 @@ import { Button } from '../lib/button'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { getBoolean, setBoolean } from '../../lib/local-storage'
+import { Dispatcher } from '../dispatcher'
+import { ConflictEditor, hasConflictDraft } from './conflict-editor'
 
 const ConflictViewKey = 'conflict-view'
 
@@ -33,6 +35,7 @@ interface IConflictViewProps {
   readonly file: WorkingDirectoryFileChange
   /** Only used to reload when the app notices the file changed. */
   readonly diff: IDiff | null
+  readonly dispatcher: Dispatcher
 }
 
 interface IConflictViewState {
@@ -41,6 +44,8 @@ interface IConflictViewState {
   readonly regions: ReadonlyArray<IConflictRegion>
   readonly kinds: ReadonlyArray<ConflictLineKind | undefined>
   readonly current: number
+  /** The merge editor instead of the read-only view. */
+  readonly editing: boolean
 }
 
 /**
@@ -58,7 +63,14 @@ export class ConflictView extends React.Component<
 
   public constructor(props: IConflictViewProps) {
     super(props)
-    this.state = { lines: [], tokens: {}, regions: [], kinds: [], current: 0 }
+    this.state = {
+      lines: [],
+      tokens: {},
+      regions: [],
+      kinds: [],
+      current: 0,
+      editing: hasConflictDraft(props.repository, props.file.path),
+    }
   }
 
   public componentDidMount() {
@@ -67,6 +79,9 @@ export class ConflictView extends React.Component<
 
   public componentDidUpdate(prevProps: IConflictViewProps) {
     if (prevProps.file.path !== this.props.file.path) {
+      // Files with unsaved edits reopen in the editor.
+      const { repository, file } = this.props
+      this.setState({ editing: hasConflictDraft(repository, file.path) })
       this.load(true)
     } else if (prevProps.diff !== this.props.diff) {
       this.load(false)
@@ -113,6 +128,20 @@ export class ConflictView extends React.Component<
   public render() {
     const { lines, regions, current } = this.state
 
+    if (this.state.editing) {
+      return (
+        <div className="conflict-view">
+          <ConflictEditor
+            key={this.props.file.path}
+            repository={this.props.repository}
+            dispatcher={this.props.dispatcher}
+            path={this.props.file.path}
+            onClose={this.onStopEditing}
+          />
+        </div>
+      )
+    }
+
     return (
       <div className="conflict-view">
         <div className="conflict-view-toolbar">
@@ -139,8 +168,14 @@ export class ConflictView extends React.Component<
           <span className="conflict-view-legend incoming">
             Incoming {this.label(regions[current]?.incomingLabel)}
           </span>
+          <Button onClick={this.onEdit} tooltip="Resolve the conflicts here">
+            <Octicon symbol={octicons.pencil} />
+            Edit
+          </Button>
         </div>
         <WholeFileLines
+          // A new file starts at the top, not at the last one's scroll.
+          key={this.props.file.path}
           ref={this.linesRef}
           lines={lines}
           tokens={this.state.tokens}
@@ -174,6 +209,14 @@ export class ConflictView extends React.Component<
   }
 
   private isMarker = (index: number) => this.state.kinds[index] === 'marker'
+
+  private onEdit = () => {
+    this.setState({ editing: true })
+  }
+
+  private onStopEditing = () => {
+    this.setState({ editing: false })
+  }
 
   private onPrevious = () => {
     const n = this.state.regions.length

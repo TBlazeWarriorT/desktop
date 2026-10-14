@@ -1,5 +1,6 @@
 // Every line of a file, highlighted (app/src/ui/diff/whole-file-lines.tsx).
 .whole-file-lines {
+  position: relative;
   flex-grow: 1;
   min-height: 0;
   font-family: var(--font-family-monospace);
@@ -53,5 +54,63 @@
     border-bottom: var(--base-border);
     background: var(--box-alt-background-color);
     color: var(--text-secondary-color);
+  }
+}
+
+// Ctrl+F in a whole file, styled like the diff's (_side-by-side-diff.scss).
+.whole-file-lines {
+  .diff-search {
+    position: absolute;
+    top: 0;
+    right: var(--spacing);
+    border: var(--base-border);
+    border-top: 0;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    padding: var(--spacing-half) var(--spacing);
+    box-shadow: var(--base-box-shadow);
+    z-index: var(--popup-z-index);
+    background: var(--background-color);
+    cursor: auto;
+
+    .text-box-component input {
+      border: 0;
+      box-shadow: none;
+      background: var(--box-background-color);
+      color: var(--text-color);
+      font-size: var(--font-size);
+      font-family: var(--font-family-sans-serif);
+      height: var(--text-field-height);
+      padding: 0;
+      width: 180px;
+
+      &:focus {
+        border: none;
+        outline: 0;
+        box-shadow: none;
+      }
+    }
+  }
+
+  .whole-file-search-count {
+    position: absolute;
+    bottom: var(--spacing-half);
+    right: var(--spacing);
+    z-index: var(--popup-z-index);
+    padding: 0 var(--spacing-half);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    background: var(--background-color);
+    color: var(--text-secondary-color);
+    font-family: var(--font-family-sans-serif);
+    user-select: none;
+  }
+
+  .cm-search-result {
+    background-color: rgba(255, 255, 0, 0.4);
+
+    &.cm-selected {
+      background: Highlight;
+      color: HighlightText;
+    }
   }
 }

@@ -254,6 +254,10 @@ and nothing reaches GitHub.
   The second block is diff3 style (with the original version).
 - A real merge conflict: Branch > Merge into current branch > \`merge-me-conflict\`.
   Abort it afterwards (or rebuild the repo).
+- Merge editor: in Conflicts, Edit. Each block has Current / Incoming / Both /
+  Both, incoming first above it; anything can be typed too (Alt+↑/↓ moves lines,
+  Ctrl+F searches, Ctrl+Z undoes). Switch files and back: unsaved edits are still
+  there. Ctrl+S with no markers left: the file stops being conflicted.
 
 ## Stashes
 

@@ -49,9 +49,16 @@ notes are in `AGENTS.md`.
              choice; relative images inlined from the right version of the file.
        - [x] Same preview in the viewer from 7 (File/Preview in the Files tab header).
        - [ ] Relative links between `.md` files (only https links open today, in the browser).
-9. [ ] **Simple built-in text editor.**
-10. [ ] **Conflicts B:** merge editor (pick one/other/both, edit, reorder lines; pop-out
-        later). Builds on 2 and 9.
+       - [ ] Ctrl+F in the Markdown preview (it's an iframe; File mode has Ctrl+F meanwhile).
+9. [ ] **Simple built-in text editor.** The editor exists since 10 (`CodeEditor`); it
+       needs an Edit button in File mode and the Files tab.
+10. [x] **Conflicts B:** merge editor. Conflicts > Edit: each block gets Current /
+        Incoming / Both / Both, incoming first, and the file is editable (CodeMirror 6,
+        `ui/editor/code-editor.tsx`, highlighted by our worker). Ctrl+S keeps the line
+        endings; unsaved edits survive switching files.
+        - [ ] "Resolve here" next to "Open in editor" in the conflicts dialog.
+        - [ ] Pop-out window.
+        - [ ] Three-pane layout (current | incoming over the result), if inline falls short.
 11. [x] **Remotes/upstreams:** Repository > Remotes… lists every remote, with add (URL
         or local folder, then fetch), edit name/URL, remove and per-remote Fetch (a plain
         Fetch only covers the default remote and a fork's parent).

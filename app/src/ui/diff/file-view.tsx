@@ -95,7 +95,12 @@ export class FileView extends React.Component<IFileViewProps, IFileViewState> {
           <>
             {file.truncated &&
               this.renderMessage('Only the first 1 MB is shown.', true)}
-            <WholeFileLines lines={file.lines} tokens={tokens} />
+            <WholeFileLines
+              // A new file starts at the top, not at the last one's scroll.
+              key={`${this.props.path}|${sourceKey(this.props.source)}`}
+              lines={file.lines}
+              tokens={tokens}
+            />
           </>
         )}
       </div>

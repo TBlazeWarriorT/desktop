@@ -17,6 +17,10 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.14",
     "@floating-ui/react-dom": "^2.1.2",
     "@github/alive-client": "^1.2.0",
     "@github/copilot-sdk": "^1.0.18",
