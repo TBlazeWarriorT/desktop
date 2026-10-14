@@ -5,6 +5,13 @@
   font-family: var(--font-family-monospace);
   font-size: var(--font-size-sm);
   background: var(--background-color);
+
+  // The app disables selection globally; the code must be copyable.
+  &,
+  * {
+    cursor: text;
+    user-select: text;
+  }
 }
 
 .whole-file-row {
@@ -17,6 +24,7 @@
     padding-right: var(--spacing-half);
     text-align: right;
     color: var(--diff-line-number-color);
+    // Copying lines shouldn't bring their numbers along.
     user-select: none;
   }
 
