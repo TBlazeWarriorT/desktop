@@ -15,6 +15,8 @@ import {
 import { Repository } from '../../../models/repository'
 import { DiffHunk, DiffLineType, DiffLine } from '../../../models/diff'
 import { getOldPathOrDefault } from '../../../lib/get-old-path'
+import { getRathenaHighlightContext } from '../../../lib/rathena/context'
+import { IRathenaHighlightContext } from '../../../lib/rathena/types'
 
 /** The maximum number of bytes we'll process for highlighting. */
 const MaxHighlightContentLength = 1024 * 1024
@@ -38,6 +40,8 @@ export interface IFileContents {
   readonly oldContents: ReadonlyArray<string>
   readonly newContents: ReadonlyArray<string>
   readonly canBeExpanded: boolean
+  /** Set when the repository is an rAthena server. */
+  readonly rathena?: IRathenaHighlightContext
 }
 
 interface IFileTokens {
@@ -119,8 +123,11 @@ export async function getFileContents(
     }),
   ])
 
+  const rathena = await getRathenaHighlightContext(repo.path)
+
   return {
     file,
+    rathena,
     oldContents: oldContents?.toString('utf8').split(/\r?\n/) ?? [],
     newContents: newContents?.toString('utf8').split(/\r?\n/) ?? [],
     canBeExpanded:
@@ -196,7 +203,8 @@ export async function highlightContents(
           Path.basename(oldPath),
           Path.extname(oldPath),
           tabSize,
-          lineFilters.oldLineFilter
+          lineFilters.oldLineFilter,
+          { path: oldPath, rathena: contents.rathena }
         ).catch(e => {
           log.error('Highlighter worked failed for old contents', e)
           return {}
@@ -208,7 +216,8 @@ export async function highlightContents(
           Path.basename(file.path),
           Path.extname(file.path),
           tabSize,
-          lineFilters.newLineFilter
+          lineFilters.newLineFilter,
+          { path: file.path, rathena: contents.rathena }
         ).catch(e => {
           log.error('Highlighter worked failed for new contents', e)
           return {}

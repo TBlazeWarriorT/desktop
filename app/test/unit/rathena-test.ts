@@ -178,4 +178,33 @@ describe('rathena highlighting', () => {
       ['mes', 'rathena-command'],
     ])
   })
+
+  it('applies repository extras and global functions', () => {
+    const out = new Array<[string, string]>()
+    const options = {
+      name: 'rathena',
+      definitions,
+      key: 'test-extras',
+      extra: {
+        prefixes: ['GM_'],
+        commands: ['plugincmd'],
+        keywords: ['until'],
+      },
+      globalFunctions: ['F_Known'],
+    }
+    const text =
+      'plugincmd GM_FOO; until; callfunc "F_Known"; callfunc "F_Missing"; F_Known;'
+    runMode(text, options, (t, style) => {
+      if (style) {
+        out.push([t, style])
+      }
+    })
+    const style = (w: string) => out.find(([t]) => t === w)?.[1]
+    assert.equal(style('plugincmd'), 'rathena-command')
+    assert.equal(style('GM_FOO'), 'rathena-constant')
+    assert.equal(style('until'), 'keyword rathena-keyword')
+    assert.equal(style('"F_Known"'), 'string rathena-function')
+    assert.equal(style('F_Known'), 'rathena-function')
+    assert.ok(!out.some(([t]) => t === '"F_Missing"'))
+  })
 })

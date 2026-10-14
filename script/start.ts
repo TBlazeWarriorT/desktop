@@ -8,6 +8,8 @@ import configs from '../app/webpack.development'
 
 import { run } from './run'
 import { createServer } from 'http'
+import { join } from 'path'
+import { getDistPath } from './dist-info'
 
 function getPortOrDefault() {
   const port = process.env.PORT
@@ -72,4 +74,27 @@ if (process.env.NODE_ENV === 'production') {
     console.error(err)
     process.exit(1)
   })
+
+  // Rebuild every other bundle (main, crash, cli, highlighter) straight into
+  // the packaged app, so build:dev is only needed for dependencies and static files.
+  const appDir = join(getDistPath(), 'resources', 'app')
+  for (const config of configs.filter(c => c !== rendererConfig)) {
+    const name = Object.keys(config.entry ?? {}).join(', ')
+    let firstBuild = true
+    webpack({ ...config, output: { ...config.output, path: appDir } }).watch(
+      {},
+      (err, stats) => {
+        if (err || stats?.hasErrors()) {
+          console.error(err ?? stats?.toString('errors-only'))
+        } else if (!firstBuild) {
+          console.log(
+            name === 'highlighter' || name === 'crash'
+              ? `${name} rebuilt: Ctrl+R to reload`
+              : `${name} rebuilt: close and reopen the app`
+          )
+        }
+        firstBuild = false
+      }
+    )
+  }
 }

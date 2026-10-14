@@ -1,5 +1,6 @@
 @echo off
-rem Full dev rebuild, then reopens the app. Needed after highlighter, main-process or build config changes.
+rem Full dev rebuild, then reopens the app. Only needed after yarn install, app/static or webpack config changes:
+rem dev-start.bat already watches and recompiles all code.
 cd /d "%~dp0"
 rem Close gracefully first: a forced kill can lose unsaved login/preferences.
 taskkill /im GitHubDesktop-dev.exe >nul 2>&1

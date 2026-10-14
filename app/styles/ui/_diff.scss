@@ -812,6 +812,9 @@
       color: var(--rathena-npc-name-color);
       font-weight: 600;
     }
+    &.cm-rathena-function {
+      color: var(--rathena-function-color);
+    }
     &.cm-rathena-npc-hidden,
     &.cm-rathena-npc-unique {
       color: var(--rathena-comment-color);

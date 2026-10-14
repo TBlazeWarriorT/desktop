@@ -10,7 +10,7 @@ import {
 } from 'codemirror/addon/runmode/runmode.node.js'
 
 import { ITokens, IHighlightRequest } from '../lib/highlighter/types'
-import { looksLikeRathenaScript } from './rathena'
+import { looksLikeRathenaScript, IRathenaModeOptions } from './rathena'
 
 /**
  * A mode definition object is used to map a certain file
@@ -538,16 +538,34 @@ function guessMimeType(contents: ReadonlyArray<string>) {
 
 const rathenaExtensions = new Set(['.txt', '.cpp'])
 
+/** Only inside an rAthena repository's npc/ folder, never e.g. in doc/. */
+function isRathenaScript(request: IHighlightRequest) {
+  const { rathena, path } = request
+  if (rathena === undefined) {
+    return false
+  }
+  return (
+    path !== undefined &&
+    /^npc\//i.test(path.replace(/\\/g, '/')) &&
+    rathenaExtensions.has(request.extension.toLowerCase()) &&
+    looksLikeRathenaScript(request.contentLines)
+  )
+}
+
 async function detectMode(
   request: IHighlightRequest
 ): Promise<CodeMirror.Mode<{}> | null> {
-  // rAthena scripts are .txt (or .cpp by our convention), told apart by content.
-  if (
-    rathenaExtensions.has(request.extension.toLowerCase()) &&
-    looksLikeRathenaScript(request.contentLines)
-  ) {
-    const baseline = await import('../lib/rathena/baseline.json')
-    return getMode({}, { name: 'rathena', definitions: baseline.default })
+  if (isRathenaScript(request)) {
+    const ctx = request.rathena!
+    const options: IRathenaModeOptions = {
+      definitions:
+        ctx.definitions ??
+        (await import('../lib/rathena/baseline.json')).default,
+      extra: ctx.extra,
+      globalFunctions: ctx.globalFunctions,
+      key: ctx.key,
+    }
+    return getMode({}, { name: 'rathena', ...options })
   }
 
   const mimeType =

@@ -19,6 +19,7 @@ const workerUri = encodePathAsUrl(__dirname, 'highlighter.js')
  * @param tabSize   The width of a tab character. Defaults to 4. Used by the
  *                  stream to count columns. See CodeMirror's StringStream
  *                  class for more details.
+ * @param context   Repository-relative path and rAthena context, if any.
  * @param lines     An optional filter of lines which needs to be tokenized.
  *
  *                  If undefined or empty all lines will be tokenized
@@ -32,7 +33,8 @@ export function highlight(
   basename: string,
   extension: string,
   tabSize: number,
-  lines: Array<number>
+  lines: Array<number>,
+  context: Pick<IHighlightRequest, 'path' | 'rathena'> = {}
 ): Promise<ITokens> {
   // Bail early if there's no content to highlight or if we don't
   // need any lines from this file.
@@ -76,6 +78,7 @@ export function highlight(
       tabSize,
       lines,
       addModeClass: true,
+      ...context,
     }
 
     worker.postMessage(request)

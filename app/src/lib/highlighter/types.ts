@@ -1,3 +1,5 @@
+import { IRathenaHighlightContext } from '../rathena/types'
+
 /**
  * Represents a single token inside of a line.
  * This object is useless without the startIndex
@@ -78,4 +80,10 @@ export interface IHighlightRequest {
    * the XML mode will get the cm-m-xml class.
    */
   readonly addModeClass?: boolean
+
+  /** Repository-relative path, used to rule out e.g. rAthena docs. */
+  readonly path?: string
+
+  /** Set when the repository looks like an rAthena server. */
+  readonly rathena?: IRathenaHighlightContext
 }
