@@ -244,4 +244,24 @@ describe('rathena highlighting', () => {
     assert.equal(style('F_Known'), 'rathena-function')
     assert.ok(!out.some(([t]) => t === '"F_Missing"'))
   })
+
+  it('colors labels where they are used, not only where defined', () => {
+    const label = (line: string, token: string) =>
+      styleOf(line, token)?.includes('rathena-label') ?? false
+
+    assert.ok(label('\tcallsub S_BreakRope;', 'S_BreakRope'))
+    assert.ok(label('\tif (.@a) goto L_End;', 'L_End'))
+    assert.ok(label('\tjump_zero(.@a > 1, L_Skip);', 'L_Skip'))
+    assert.ok(label('\tmenu "Yes",L_Yes,"No",-;', 'L_Yes'))
+    assert.ok(label('\tcmdothernpc "Guard","Reset";', '"Reset"'))
+    assert.ok(label('\tdonpcevent "Guard::OnStart";', '::OnStart"'))
+    assert.ok(label('\taddtimer 1000, "Npc#1::OnTimer";', '::OnTimer"'))
+
+    // Only the label arguments.
+    assert.ok(!label('\tcallsub S_X, getarg(0);', 'getarg'))
+    assert.ok(!label('\tmenu "Yes",L_Yes,"No",-;', '"Yes"'))
+    assert.ok(!label('\tcmdothernpc "Guard","Reset";', '"Guard"'))
+    assert.ok(!label('\tjump_zero(.@a > 1, L_Skip); mes L_Skip;', 'mes'))
+    assert.ok(!label('\tset .@x, Unrelated;', 'Unrelated'))
+  })
 })

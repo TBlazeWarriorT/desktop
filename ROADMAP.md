@@ -57,6 +57,8 @@ notes are in `AGENTS.md`.
 
 ## rAthena syntax
 
+- [x] Labels where they are used: after goto/callsub/jump_zero, menu's label slots,
+      cmdothernpc's command and "Npc::OnEvent" strings (by position, not checked).
 - [ ] **Override (phase 3):** a "Syntax" dropdown next to Diff Options (Auto / rAthena /
       rAthena YAML / Plain text / others), with "remember for this path in this repo" and
       showing the active source (e.g. "rAthena · Gear-Mechanica-Server · 753 cmds").

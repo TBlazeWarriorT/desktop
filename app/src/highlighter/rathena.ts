@@ -166,6 +166,65 @@ interface IState {
   functions: Set<string>
   /** Last word seen on this line, to recognize `callfunc "F_Name"`. */
   lastWord: string | null
+  /** A command taking labels (see labelArgs) and which argument we're in. */
+  labelCommand: string | null
+  argIndex: number
+  /** Paren depth of labelCommand's arguments; -1 until we know. */
+  argDepth: number
+  depth: number
+  /** End of a `"Npc::OnEvent"` string's event part, still to be emitted. */
+  eventLabelEnd: number | null
+}
+
+/** Arguments that name a label, per command; 'odd' for menu's label slots. */
+const labelArgs = new Map<string, ReadonlyArray<number> | 'odd'>([
+  ['goto', [0]],
+  ['callsub', [0]],
+  ['jump_zero', [1]],
+  ['menu', 'odd'],
+  // cmdothernpc "<npc>","<command>" is donpcevent "<npc>::OnCommand<command>".
+  ['cmdothernpc', [1]],
+])
+
+function isLabelArg(state: IState) {
+  const args =
+    state.labelCommand === null ? undefined : labelArgs.get(state.labelCommand)
+  return (
+    args !== undefined &&
+    state.depth === state.argDepth &&
+    (args === 'odd' ? state.argIndex % 2 === 1 : args.includes(state.argIndex))
+  )
+}
+
+/** The arguments start at the first token after the command. */
+function startArgs(state: IState) {
+  if (state.labelCommand !== null && state.argDepth === -1) {
+    state.argDepth = state.depth
+  }
+}
+
+/** Keeps track of commas and parens for isLabelArg. */
+function trackPunctuation(ch: string, state: IState) {
+  if (ch === '(') {
+    // jump_zero(cond, label): the arguments are inside the parens.
+    if (state.labelCommand !== null && state.argDepth === -1) {
+      state.argDepth = state.depth + 1
+    }
+    state.depth++
+    return
+  }
+  startArgs(state)
+  if (ch === ')') {
+    state.depth = Math.max(state.depth - 1, 0)
+    if (state.depth < state.argDepth) {
+      state.labelCommand = null
+    }
+  } else if (ch === ',' && state.depth === state.argDepth) {
+    state.argIndex++
+  } else if (ch === ';' || ch === '{' || ch === '}') {
+    state.labelCommand = null
+    state.depth = 0
+  }
 }
 
 /** Comment text up to a `!TODO`-style marker, which runs to the end. */
@@ -315,12 +374,18 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
       header: null,
       functions: new Set(),
       lastWord: null,
+      labelCommand: null,
+      argIndex: 0,
+      argDepth: -1,
+      depth: 0,
+      eventLabelEnd: null,
     }),
 
     token(stream, state: IState) {
       if (stream.sol()) {
         state.inString = false
         state.lastWord = null
+        state.eventLabelEnd = null
         const m = state.inBlockComment ? null : headerRe.exec(stream.string)
         state.header = m
           ? [
@@ -339,6 +404,12 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
         const r = commentUntil(stream, /\*\//)
         state.inBlockComment = !r.closed
         return r.style
+      }
+
+      if (state.eventLabelEnd !== null) {
+        stream.pos = state.eventLabelEnd
+        state.eventLabelEnd = null
+        return 'string rathena-label'
       }
 
       if (state.inString) {
@@ -367,6 +438,19 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
         if (callee && c.globalFunctions.has(callee[1])) {
           stream.pos += callee[0].length
           return 'string rathena-function'
+        }
+        startArgs(state)
+        const quoted = stream.match(/^"[^"\\]*"/, false)
+        if (quoted && isLabelArg(state)) {
+          stream.pos += quoted[0].length
+          return 'string rathena-label'
+        }
+        // "Npc::OnEvent" (donpcevent, addtimer, monster...): the event part.
+        const event = stream.match(/^("[^"\\]*?)(::[A-Za-z_]\w*")/, false)
+        if (event) {
+          stream.pos += event[1].length
+          state.eventLabelEnd = stream.pos + event[2].length
+          return 'string'
         }
         stream.next()
         state.inString = true
@@ -402,6 +486,15 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
           state.functions.add(name)
         }
         state.lastWord = name
+        startArgs(state)
+        if (isLabelArg(state)) {
+          return 'rathena-label'
+        }
+        if (labelArgs.has(name.toLowerCase())) {
+          state.labelCommand = name.toLowerCase()
+          state.argIndex = 0
+          state.argDepth = -1
+        }
         const isFirst = stream.string.slice(0, stream.start).trim() === ''
         if (
           isFirst &&
@@ -414,6 +507,9 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
       }
 
       const ch = stream.next()
+      if (ch) {
+        trackPunctuation(ch, state)
+      }
       if (ch === '{' || ch === '}') {
         return 'rathena-brace'
       }

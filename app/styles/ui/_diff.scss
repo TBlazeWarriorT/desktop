@@ -790,6 +790,10 @@
     &.cm-string {
       color: var(--rathena-string-color);
     }
+    // Event labels inside strings ("Npc::OnEvent", cmdothernpc's command).
+    &.cm-string.cm-rathena-label {
+      color: var(--rathena-label-color);
+    }
     &.cm-comment {
       color: var(--rathena-comment-color);
       font-style: italic;
