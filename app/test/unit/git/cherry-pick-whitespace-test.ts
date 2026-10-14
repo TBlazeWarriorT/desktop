@@ -4,6 +4,7 @@ import { exec } from 'dugite'
 import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { setupEmptyRepository } from '../../helpers/repositories'
+import { checkWhitespaceConflicts } from '../../../src/lib/git/whitespace-conflicts'
 import {
   abortCherryPick,
   cherryPick,
@@ -50,7 +51,13 @@ describe('cherryPick ignoring whitespace', () => {
     const commits = [{ sha, summary: 'add warp' }]
     const plain = await cherryPick(repository, commits)
     assert.equal(plain, CherryPickResult.ConflictsEncountered)
+    // The conflicts dialog's hint: only whitespace stands in the way.
+    assert.deepEqual(await checkWhitespaceConflicts(repository), {
+      conflicted: 1,
+      ignoringWhitespace: 0,
+    })
     await abortCherryPick(repository)
+    assert.equal(await checkWhitespaceConflicts(repository), null)
 
     const result = await cherryPick(repository, commits, undefined, [
       'ignore-space-change',

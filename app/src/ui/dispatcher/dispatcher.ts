@@ -1,6 +1,11 @@
 import { Disposable } from 'event-kit'
 
 import {
+  discardFormatting,
+  formatIncomingLines,
+} from '../../lib/format-incoming'
+import { hasStoppedOperation } from '../../lib/git/whitespace-conflicts'
+import {
   IAPIOrganization,
   IAPIPullRequest,
   IAPIFullRepository,
@@ -261,6 +266,7 @@ export class Dispatcher {
       targetBranch !== null
     ) {
       const { commits, sourceBranch } = operationDetail
+      const before = targetBranch.tip.sha
       await this.abortCherryPick(repository, sourceBranch)
       this.initializeMultiCommitOperationStateCherryPick(
         repository,
@@ -269,13 +275,14 @@ export class Dispatcher {
         sourceBranch
       )
       this.showPopup({ type: PopupType.MultiCommitOperation, repository })
-      return this.cherryPick(
+      await this.cherryPick(
         repository,
         targetBranch,
         commits,
         sourceBranch,
         strategyOptions
       )
+      return this.formatIncomingAfterRetry(repository, before)
     }
 
     if (
@@ -283,6 +290,7 @@ export class Dispatcher {
       operationDetail.sourceBranch !== null
     ) {
       const { isSquash, sourceBranch } = operationDetail
+      const before = state.originalBranchTip
       await (isSquash
         ? this.abortSquashMerge(repository)
         : this.abortMerge(repository))
@@ -290,13 +298,53 @@ export class Dispatcher {
       this.initializeMergeOperation(repository, isSquash, sourceBranch)
       this.showPopup({ type: PopupType.MultiCommitOperation, repository })
       await this.switchMultiCommitOperationToShowProgress(repository)
-      return this.mergeBranch(
+      await this.mergeBranch(
         repository,
         sourceBranch,
         null,
         isSquash,
         strategyOptions
       )
+      if (before !== null) {
+        await this.formatIncomingAfterRetry(repository, before)
+      }
+    }
+  }
+
+  /**
+   * Ignoring whitespace keeps the incoming lines' own indentation; when the
+   * operation finished, the project's Prettier fixes just those lines. Left
+   * uncommitted for review.
+   */
+  private async formatIncomingAfterRetry(
+    repository: Repository,
+    before: string
+  ) {
+    // Still on conflicts: what's committed isn't the result yet. An empty
+    // before..HEAD (nothing happened) formats nothing.
+    if (await hasStoppedOperation(repository)) {
+      return
+    }
+    try {
+      const files = await formatIncomingLines(repository, before)
+      if (files.length > 0) {
+        const banner = this.appStore.getState().currentBanner
+        await this.refreshRepository(repository)
+        this.setBanner({
+          type: BannerType.IncomingLinesFormatted,
+          files,
+          onUndo:
+            banner?.type === BannerType.SuccessfulCherryPick
+              ? async () => {
+                  // Undo resets the branch; the formatting goes first.
+                  await discardFormatting(repository, files)
+                  banner.onUndo()
+                }
+              : undefined,
+        })
+      }
+    } catch (e) {
+      log.error('Formatting the incoming lines failed', e)
     }
   }
 

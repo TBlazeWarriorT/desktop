@@ -120,6 +120,22 @@ export function renderBanner(
           onUndo={banner.onUndo}
         />
       )
+    case BannerType.IncomingLinesFormatted: {
+      const { files } = banner
+      const what =
+        files.length === 1 ? files[0].split('/').pop() : `${files.length} files`
+      return (
+        <SuccessBanner
+          key="incoming-lines-formatted"
+          timeout={15000}
+          onDismissed={onDismissed}
+          onUndo={banner.onUndo}
+        >
+          Done ignoring whitespace. The incoming lines of {what} were formatted
+          with the project's Prettier: review it in Changes (not committed).
+        </SuccessBanner>
+      )
+    }
     case BannerType.SquashUndone: {
       const pluralized = banner.commitsCount === 1 ? 'commit' : 'commits'
       return (

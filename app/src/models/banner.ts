@@ -17,6 +17,7 @@ export enum BannerType {
   SuccessfulReorder = 'SuccessfulReorder',
   ConflictsFound = 'ConflictsFound',
   OSVersionNoLongerSupported = 'OSVersionNoLongerSupported',
+  IncomingLinesFormatted = 'IncomingLinesFormatted',
 }
 
 export type Banner =
@@ -54,6 +55,13 @@ export type Banner =
       readonly ourBranch: string
       /** name of the branch we merged into `ourBranch` */
       readonly theirBranch?: string
+    }
+  | {
+      readonly type: BannerType.IncomingLinesFormatted
+      /** Files whose incoming lines the project's formatter fixed. */
+      readonly files: ReadonlyArray<string>
+      /** The undo of the cherry-pick banner this one replaces, if any. */
+      readonly onUndo?: () => void
     }
   | {
       readonly type: BannerType.SuccessfulCherryPick

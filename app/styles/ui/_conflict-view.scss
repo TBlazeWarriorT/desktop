@@ -73,3 +73,16 @@
   align-items: center;
   gap: var(--spacing-half);
 }
+
+// "These conflicts come from whitespace changes" in the conflicts dialog.
+.dialog-banner.dialog-whitespace-hint {
+  gap: var(--spacing);
+  background: var(--box-alt-background-color);
+  border-top: var(--base-border);
+  border-bottom: var(--base-border);
+
+  .octicon {
+    flex-shrink: 0;
+    fill: var(--warning-badge-icon-color);
+  }
+}

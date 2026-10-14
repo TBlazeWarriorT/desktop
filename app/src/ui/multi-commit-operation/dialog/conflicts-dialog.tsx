@@ -22,6 +22,10 @@ import {
 import { ManualConflictResolution } from '../../../models/manual-conflict-resolution'
 import { OkCancelButtonGroup } from '../../dialog/ok-cancel-button-group'
 import { DialogSuccess } from '../../dialog/success'
+import {
+  IWhitespaceConflictCheck,
+  checkWhitespaceConflicts,
+} from '../../../lib/git/whitespace-conflicts'
 import { enableCopilotConflictResolution } from '../../../lib/feature-flag'
 import { getAccountForCopilotConflictResolution } from '../../../lib/get-account-for-repository'
 import { Account } from '../../../models/account'
@@ -74,6 +78,8 @@ interface IConflictsDialogState {
   readonly isCommitting: boolean
   readonly isAborting: boolean
   readonly isFileResolutionOptionsMenuOpen: boolean
+  /** Whether ignoring whitespace would clear conflicts (see the retry). */
+  readonly whitespaceCheck: IWhitespaceConflictCheck | null
 }
 
 /**
@@ -94,7 +100,47 @@ export class ConflictsDialog extends React.Component<
       isCommitting: false,
       isAborting: false,
       isFileResolutionOptionsMenuOpen: false,
+      whitespaceCheck: null,
     }
+  }
+
+  public async componentDidMount() {
+    if (this.props.onRetryIgnoringWhitespace === undefined) {
+      return
+    }
+    try {
+      const whitespaceCheck = await checkWhitespaceConflicts(
+        this.props.repository
+      )
+      this.setState({ whitespaceCheck })
+    } catch (e) {
+      log.warn('Could not check conflicts ignoring whitespace', e)
+    }
+  }
+
+  /** Says so when the conflicts are (partly) just reindented code. */
+  private renderWhitespaceHint() {
+    const check = this.state.whitespaceCheck
+    if (
+      check === null ||
+      check.conflicted === 0 ||
+      check.ignoringWhitespace >= check.conflicted
+    ) {
+      return null
+    }
+    const left = check.ignoringWhitespace
+    return (
+      <div className="dialog-banner dialog-whitespace-hint" role="status">
+        <Octicon symbol={octicons.alert} />
+        <div>
+          {left === 0
+            ? 'These conflicts come from whitespace changes, like reindented code: ignoring whitespace, it applies cleanly. '
+            : `Ignoring whitespace would leave ${left} of ${check.conflicted} files conflicted. `}
+          Use <strong>Retry ignoring whitespace</strong>, then check the
+          indentation of what comes in.
+        </div>
+      </div>
+    )
   }
 
   /**
@@ -389,6 +435,7 @@ export class ConflictsDialog extends React.Component<
         disabled={this.state.isCommitting}
       >
         {this.renderBanner(conflictedFiles.length)}
+        {this.renderWhitespaceHint()}
         <DialogContent>
           {this.renderContent(unmergedFiles, conflictedFiles.length)}
         </DialogContent>

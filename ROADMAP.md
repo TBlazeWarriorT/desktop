@@ -68,6 +68,14 @@ notes are in `AGENTS.md`.
         - [x] "Retry ignoring whitespace" in the conflicts dialog of cherry-pick and merge:
               aborts and starts over with `-X ignore-space-change` (clears conflicts
               from reindented code; what comes in keeps its own indentation).
+              The dialog simulates it first (`merge-tree`) and says when it would
+              clear all or some of the conflicts.
+              When the retry finishes, the project's own Prettier (if it has one and
+              a config) formats only the incoming lines, left uncommitted with a banner
+              (`lib/format-incoming.ts`).
+        - [ ] Without a formatter: reindent incoming lines by their neighbors' shift,
+              using `.editorconfig` for tabs/spaces. clang-format/ruff as adapters if a
+              repo starts using them (both format line ranges natively).
         - [ ] Same retry for rebase.
 11. [x] **Remotes/upstreams:** Repository > Remotes… lists every remote, with add (URL
         or local folder, then fetch), edit name/URL, remove and per-remote Fetch (a plain

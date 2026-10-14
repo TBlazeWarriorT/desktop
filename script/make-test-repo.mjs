@@ -260,7 +260,8 @@ and nothing reaches GitHub.
   there. Ctrl+S with no markers left: the file stops being conflicted.
 - The conflicts dialog of a cherry-pick or merge has Retry ignoring whitespace: it
   aborts and starts over with \`-X ignore-space-change\` (helps when one side only
-  reindented the code).
+  reindented the code). In a repo with its own Prettier, the incoming lines then
+  get formatted, uncommitted, with a banner (Undo discards that too).
 
 ## Stashes
 
