@@ -19,7 +19,8 @@ function getPortOrDefault() {
     return result
   }
 
-  return 3000
+  // 3000 is taken by the Gear-Mechanica-Client dev server
+  return 3100
 }
 
 function startApp() {
