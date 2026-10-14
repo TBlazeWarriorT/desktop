@@ -3,6 +3,7 @@
 import {
   defineMode,
   defineMIME,
+  getMode,
 } from 'codemirror/addon/runmode/runmode.node.js'
 import { IRathenaDefinitions, IRathenaExtra } from '../lib/rathena/types'
 
@@ -158,30 +159,13 @@ interface IState {
   inString: boolean
   /** End offsets of the location, type and name fields of an NPC header line. */
   header: [number, number, number] | null
-  /** Local (`function X;`) and global (`function<TAB>script<TAB>X`) functions in this file. */
-  functions: Set<string> | null
+  /**
+   * Local functions seen so far. rAthena requires `function X;` before any
+   * call, so collecting them while tokenizing catches every valid call.
+   */
+  functions: Set<string>
   /** Last word seen on this line, to recognize `callfunc "F_Name"`. */
   lastWord: string | null
-}
-
-const localFunctionRe = /\bfunction\s+([A-Za-z_]\w*)\s*(?:[;{]|$)/g
-
-/** Scans the whole file once, so calls before the declaration are caught too. */
-function collectFunctions(stream: CodeMirror.StringStream): Set<string> {
-  const names = new Set<string>()
-  let line: string | undefined = stream.string
-  for (let n = 1; line !== undefined; n++) {
-    const header = headerRe.exec(line)
-    if (header && header[2] === 'function') {
-      names.add(header[3])
-    } else {
-      for (const [, name] of line.matchAll(localFunctionRe)) {
-        names.add(name)
-      }
-    }
-    line = stream.lookAhead(n)
-  }
-  return names
 }
 
 /** Comment text up to a `!TODO`-style marker, which runs to the end. */
@@ -216,6 +200,10 @@ function headerToken(stream: CodeMirror.StringStream, state: IState) {
   }
 
   if (pos < locEnd) {
+    // The map always comes first, and may start with a digit (1@begi).
+    if (pos === 0 && stream.match(/^[^,\t]+/)) {
+      return 'rathena-map'
+    }
     if (stream.match(/^\d+/)) {
       return 'number'
     }
@@ -325,13 +313,11 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
       inBlockComment: false,
       inString: false,
       header: null,
-      functions: null,
+      functions: new Set(),
       lastWord: null,
     }),
 
     token(stream, state: IState) {
-      state.functions ??= collectFunctions(stream)
-
       if (stream.sol()) {
         state.inString = false
         state.lastWord = null
@@ -412,6 +398,9 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
       const word = stream.match(/^[A-Za-z_]\w*\$?/)
       if (word) {
         const name = word[0]
+        if (state.lastWord === 'function') {
+          state.functions.add(name)
+        }
         state.lastWord = name
         const isFirst = stream.string.slice(0, stream.start).trim() === ''
         if (
@@ -440,3 +429,76 @@ defineMode('rathena', (_config, options?: IRathenaModeOptions) => {
 })
 
 defineMIME(RathenaMIME, 'rathena')
+
+// `Script: |`, `OnEquipScript: >-`, `- Script: |` ...: a block scalar of script.
+const scriptBlockRe = /^(\s*(?:-\s+)?)\w*Script:\s*[|>][-+0-9]*\s*(?:#.*)?$/
+
+/** rAthena db YAML with an item/pet/combo script embedded somewhere. */
+export function hasEmbeddedScripts(lines: ReadonlyArray<string>) {
+  return lines.some(l => scriptBlockRe.test(l))
+}
+
+interface IYamlState {
+  yaml: unknown
+  /** Set while inside a script block scalar. */
+  script: IState | null
+  /** Column of the `Script:` key; lines indented deeper belong to the block. */
+  keyIndent: number
+  /** The previous line opened a block scalar. */
+  pending: boolean
+}
+
+/** YAML that hands script block scalars to the rathena mode. Needs yaml loaded. */
+defineMode('rathena-yaml', (config, options?: IRathenaModeOptions) => {
+  const yaml = getMode(config, 'yaml')
+  const script = getMode<IState>(config, { ...options, name: 'rathena' })
+
+  return {
+    name: 'rathena-yaml',
+
+    startState: (): IYamlState => ({
+      yaml: yaml.startState?.(),
+      script: null,
+      keyIndent: 0,
+      pending: false,
+    }),
+
+    blankLine(state: IYamlState) {
+      if (state.script === null) {
+        yaml.blankLine?.(state.yaml as {})
+      }
+    },
+
+    token(stream, state: IYamlState) {
+      if (stream.sol()) {
+        if (state.pending) {
+          state.pending = false
+          state.script = script.startState!()
+        }
+        if (
+          state.script !== null &&
+          stream.string.trim() !== '' &&
+          stream.indentation() <= state.keyIndent
+        ) {
+          state.script = null
+        }
+        if (state.script === null) {
+          const m = scriptBlockRe.exec(stream.string)
+          if (m) {
+            state.pending = true
+            state.keyIndent = m[1].length
+          }
+        }
+      }
+
+      return state.script !== null
+        ? script.token(stream, state.script)
+        : yaml.token(stream, state.yaml as {})
+    },
+
+    innerMode: (state: IYamlState) =>
+      state.script !== null
+        ? { mode: script, state: state.script }
+        : { mode: yaml, state: state.yaml },
+  } as CodeMirror.Mode<IYamlState>
+})

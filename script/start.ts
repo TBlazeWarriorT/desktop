@@ -166,7 +166,7 @@ if (process.env.NODE_ENV === 'production') {
   const port = getPortOrDefault()
   const message = 'Could not find public path from configuration'
 
-  track(compiler, 'renderer', 'Ctrl+R in the app')
+  track(compiler, 'renderer', 'Ctrl+Alt+R in the app')
 
   const devMiddleware = DevMiddleware(compiler, {
     publicPath: u(
@@ -201,8 +201,8 @@ if (process.env.NODE_ENV === 'production') {
   // the packaged app, so build:dev is only needed for dependencies and static files.
   const appDir = join(getDistPath(), 'resources', 'app')
   const hints: Record<string, string> = {
-    highlighter: 'Ctrl+R in the app',
-    crash: 'Ctrl+R in the app',
+    highlighter: 'Ctrl+Alt+R in the app',
+    crash: 'Ctrl+Alt+R in the app',
     main: 'close and reopen the app',
     cli: 'takes effect on next CLI run',
   }

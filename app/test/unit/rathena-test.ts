@@ -5,7 +5,10 @@ import {
   parseBuiltins,
   parseConstants,
 } from '../../src/lib/rathena/parse-source'
-import { looksLikeRathenaScript } from '../../src/highlighter/rathena'
+import {
+  looksLikeRathenaScript,
+  hasEmbeddedScripts,
+} from '../../src/highlighter/rathena'
 import { IRathenaDefinitions } from '../../src/lib/rathena/types'
 
 const definitions: IRathenaDefinitions = {
@@ -73,6 +76,36 @@ describe('rathena source parsing', () => {
   })
 })
 
+describe('rathena in db YAML', () => {
+  it('highlights script block scalars and nothing else', async () => {
+    await import('codemirror/mode/yaml/yaml')
+    const text = [
+      'Body:',
+      '  - Id: 1124',
+      '    Name: mes',
+      '    Script: |',
+      '      mes "^FF0000hi";',
+      '',
+      '      close;',
+      '    UnEquipScript: >-',
+      '      close;',
+      '  - Id: 1125',
+    ].join('\n')
+    const out = new Array<[string, string]>()
+    runMode(text, { name: 'rathena-yaml', definitions }, (t, style) => {
+      if (style) {
+        out.push([t, style])
+      }
+    })
+    const styles = (w: string) => out.filter(([t]) => t === w).map(s => s[1])
+    assert.deepEqual(styles('mes'), ['rathena-command'])
+    assert.deepEqual(styles('close'), ['rathena-command', 'rathena-command'])
+    assert.ok(!styles('1125').some(s => s.includes('rathena')))
+    assert.ok(hasEmbeddedScripts(text.split('\n')))
+    assert.ok(!hasEmbeddedScripts(['Body:', '  - Id: 1']))
+  })
+})
+
 describe('rathena highlighting', () => {
   it('detects scripts by their NPC header', () => {
     assert.ok(
@@ -88,11 +121,11 @@ describe('rathena highlighting', () => {
     assert.ok(!looksLikeRathenaScript(['int main() {', '\treturn 0;', '}']))
   })
 
-  it('marks functions declared anywhere in the file', () => {
+  it('marks calls to functions declared earlier in the file', () => {
     const text = [
       '-\tscript\tX\t-1,{',
-      '\tChkResult(1);',
       '\tfunction ChkResult;',
+      '\tChkResult(1);',
       '\tfunction FinalReport {',
       '}',
       'function\tscript\tF_Global\t{',
@@ -132,6 +165,10 @@ describe('rathena highlighting', () => {
       styleOf('-\tscript\tX\t1_M_PAY_ELDER,{', '1_M_PAY_ELDER'),
       'rathena-constant'
     )
+    assert.deepEqual(tokens('1@begi,90,25,0\tscript\t#b\t-1,{').slice(0, 2), [
+      ['1@begi', 'rathena-map'],
+      ['90', 'number'],
+    ])
   })
 
   it('classifies words', () => {

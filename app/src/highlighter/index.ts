@@ -10,7 +10,11 @@ import {
 } from 'codemirror/addon/runmode/runmode.node.js'
 
 import { ITokens, IHighlightRequest } from '../lib/highlighter/types'
-import { looksLikeRathenaScript, IRathenaModeOptions } from './rathena'
+import {
+  looksLikeRathenaScript,
+  hasEmbeddedScripts,
+  IRathenaModeOptions,
+} from './rathena'
 
 /**
  * A mode definition object is used to map a certain file
@@ -538,24 +542,37 @@ function guessMimeType(contents: ReadonlyArray<string>) {
 
 const rathenaExtensions = new Set(['.txt', '.cpp'])
 
-/** Only inside an rAthena repository's npc/ folder, never e.g. in doc/. */
-function isRathenaScript(request: IHighlightRequest) {
+/**
+ * 'rathena' for scripts inside an rAthena repository's npc/ folder (never e.g.
+ * doc/), 'rathena-yaml' for its db YAML with embedded scripts.
+ */
+function getRathenaModeName(request: IHighlightRequest) {
   const { rathena, path } = request
-  if (rathena === undefined) {
-    return false
+  const ext = request.extension.toLowerCase()
+  if (rathena === undefined || path === undefined) {
+    return null
   }
-  return (
-    path !== undefined &&
+  if (
     /^npc\//i.test(path.replace(/\\/g, '/')) &&
-    rathenaExtensions.has(request.extension.toLowerCase()) &&
+    rathenaExtensions.has(ext) &&
     looksLikeRathenaScript(request.contentLines)
-  )
+  ) {
+    return 'rathena'
+  }
+  if (
+    (ext === '.yml' || ext === '.yaml') &&
+    hasEmbeddedScripts(request.contentLines)
+  ) {
+    return 'rathena-yaml'
+  }
+  return null
 }
 
 async function detectMode(
   request: IHighlightRequest
 ): Promise<CodeMirror.Mode<{}> | null> {
-  if (isRathenaScript(request)) {
+  const rathenaMode = getRathenaModeName(request)
+  if (rathenaMode !== null) {
     const ctx = request.rathena!
     const options: IRathenaModeOptions = {
       definitions:
@@ -565,7 +582,10 @@ async function detectMode(
       globalFunctions: ctx.globalFunctions,
       key: ctx.key,
     }
-    return getMode({}, { name: 'rathena', ...options })
+    if (rathenaMode === 'rathena-yaml') {
+      await import('codemirror/mode/yaml/yaml')
+    }
+    return getMode({}, { name: rathenaMode, ...options })
   }
 
   const mimeType =
