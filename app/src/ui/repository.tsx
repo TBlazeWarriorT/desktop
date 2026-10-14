@@ -598,6 +598,7 @@ export class RepositoryView extends React.Component<
       return (
         <Changes
           repository={this.props.repository}
+          emoji={this.props.emoji}
           dispatcher={this.props.dispatcher}
           file={selectedFile}
           diff={diff}

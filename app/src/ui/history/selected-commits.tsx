@@ -27,6 +27,12 @@ import { showContextualMenu } from '../../lib/menu-item'
 
 import { FileList } from './file-list'
 import { SeamlessDiffSwitcher } from '../diff/seamless-diff-switcher'
+import {
+  MarkdownPreview,
+  isMarkdownFile,
+  getMarkdownPreview,
+  setMarkdownPreview,
+} from '../diff/markdown-preview'
 import { getDotComAPIEndpoint } from '../../lib/api'
 import { IMenuItem } from '../../lib/menu-item'
 import { IChangesetData } from '../../lib/git'
@@ -95,6 +101,7 @@ interface ISelectedCommitsProps {
 
 interface ISelectedCommitsState {
   readonly isExpanded: boolean
+  readonly markdownPreview: boolean
 }
 
 /** The History component. Contains the commit list, commit summary, and diff. */
@@ -109,6 +116,7 @@ export class SelectedCommits extends React.Component<
 
     this.state = {
       isExpanded: false,
+      markdownPreview: getMarkdownPreview(),
     }
   }
 
@@ -155,6 +163,20 @@ export class SelectedCommits extends React.Component<
       )
     }
 
+    if (this.state.markdownPreview && isMarkdownFile(file.path)) {
+      return (
+        <div className="diff-container">
+          {this.renderDiffHeader()}
+          <MarkdownPreview
+            repository={this.props.repository}
+            file={file}
+            emoji={this.props.emoji}
+            onLinkClicked={this.onMarkdownLinkClicked}
+          />
+        </div>
+      )
+    }
+
     return (
       <div className="diff-container">
         {this.renderDiffHeader()}
@@ -194,8 +216,19 @@ export class SelectedCommits extends React.Component<
         hideWhitespaceInDiff={this.props.hideWhitespaceInDiff}
         onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
         onDiffOptionsOpened={this.props.onDiffOptionsOpened}
+        markdownPreview={this.state.markdownPreview}
+        onMarkdownPreviewChanged={this.onMarkdownPreviewChanged}
       />
     )
+  }
+
+  private onMarkdownPreviewChanged = (markdownPreview: boolean) => {
+    setMarkdownPreview(markdownPreview)
+    this.setState({ markdownPreview })
+  }
+
+  private onMarkdownLinkClicked = (url: string) => {
+    this.props.dispatcher.openInBrowser(url)
   }
 
   private renderCommitSummary(commits: ReadonlyArray<Commit>) {

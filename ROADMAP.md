@@ -23,8 +23,11 @@ ficam no `AGENTS.md`.
        - Repository > View All Files: árvore de pastas do repo no HEAD, com busca fuzzy
          (repos com milhares de arquivos, então árvore virtualizada, não lista plana);
        - Right Click num commit do histórico → "Ver arquivos neste commit".
-8. [ ] **Preview de `.md`** igual ao GitHub web: toggle "Preview" no visualizador do 7 e no
-       diff de arquivos `.md`. Reaproveita `app/src/ui/lib/sandboxed-markdown.tsx`.
+8. [ ] **Preview de `.md`** igual ao GitHub web.
+       - [x] Botão Preview/Diff no diff de `.md` (Changes e History), lembra a última escolha;
+             imagens relativas embutidas da versão certa do arquivo.
+       - [ ] Mesmo preview no visualizador do 7.
+       - [ ] Links relativos entre `.md` (hoje só links https abrem, no navegador).
 9. [ ] **Editor de texto simples** embutido.
 10. [ ] **Conflitos B:** merge editor (escolher um/outro/ambos, editar, reordenar linhas;
         pop-out depois). Em cima de 2 e 9.

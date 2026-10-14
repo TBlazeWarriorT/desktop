@@ -11,9 +11,17 @@ import { Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
 import { SeamlessDiffSwitcher } from '../diff/seamless-diff-switcher'
 import { PopupType } from '../../models/popup'
+import { Emoji } from '../../lib/emoji'
+import {
+  MarkdownPreview,
+  isMarkdownFile,
+  getMarkdownPreview,
+  setMarkdownPreview,
+} from '../diff/markdown-preview'
 
 interface IChangesProps {
   readonly repository: Repository
+  readonly emoji: Map<string, Emoji>
   readonly file: WorkingDirectoryFileChange
   readonly diff: IDiff | null
   readonly dispatcher: Dispatcher
@@ -56,7 +64,16 @@ interface IChangesProps {
   readonly onDiffOptionsOpened: () => void
 }
 
-export class Changes extends React.Component<IChangesProps, {}> {
+interface IChangesState {
+  readonly markdownPreview: boolean
+}
+
+export class Changes extends React.Component<IChangesProps, IChangesState> {
+  public constructor(props: IChangesProps) {
+    super(props)
+    this.state = { markdownPreview: getMarkdownPreview() }
+  }
+
   /**
    * Whether or not it's currently possible to change the line selection
    * of a diff. Changing selection is not possible while a commit is in
@@ -111,28 +128,58 @@ export class Changes extends React.Component<IChangesProps, {}> {
           hideWhitespaceInDiff={this.props.hideWhitespaceInDiff}
           onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
           onDiffOptionsOpened={this.props.onDiffOptionsOpened}
+          markdownPreview={this.state.markdownPreview}
+          onMarkdownPreviewChanged={this.onMarkdownPreviewChanged}
         />
 
-        <SeamlessDiffSwitcher
-          repository={this.props.repository}
-          imageDiffType={this.props.imageDiffType}
-          file={this.props.file}
-          readOnly={false}
-          onIncludeChanged={this.onDiffLineIncludeChanged}
-          onDiscardChanges={this.onDiscardChanges}
-          diff={this.props.diff}
-          hideWhitespaceInDiff={this.props.hideWhitespaceInDiff}
-          showSideBySideDiff={this.props.showSideBySideDiff}
-          showDiffCheckMarks={this.props.showDiffCheckMarks}
-          askForConfirmationOnDiscardChanges={
-            this.props.askForConfirmationOnDiscardChanges
-          }
-          onOpenBinaryFile={this.props.onOpenBinaryFile}
-          onOpenSubmodule={this.props.onOpenSubmodule}
-          onChangeImageDiffType={this.props.onChangeImageDiffType}
-          onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
-        />
+        {this.state.markdownPreview && isMarkdownFile(this.props.file.path)
+          ? this.renderMarkdownPreview()
+          : this.renderDiff()}
       </div>
+    )
+  }
+
+  private renderMarkdownPreview() {
+    return (
+      <MarkdownPreview
+        repository={this.props.repository}
+        file={this.props.file}
+        emoji={this.props.emoji}
+        onLinkClicked={this.onMarkdownLinkClicked}
+      />
+    )
+  }
+
+  private onMarkdownPreviewChanged = (markdownPreview: boolean) => {
+    setMarkdownPreview(markdownPreview)
+    this.setState({ markdownPreview })
+  }
+
+  private onMarkdownLinkClicked = (url: string) => {
+    this.props.dispatcher.openInBrowser(url)
+  }
+
+  private renderDiff() {
+    return (
+      <SeamlessDiffSwitcher
+        repository={this.props.repository}
+        imageDiffType={this.props.imageDiffType}
+        file={this.props.file}
+        readOnly={false}
+        onIncludeChanged={this.onDiffLineIncludeChanged}
+        onDiscardChanges={this.onDiscardChanges}
+        diff={this.props.diff}
+        hideWhitespaceInDiff={this.props.hideWhitespaceInDiff}
+        showSideBySideDiff={this.props.showSideBySideDiff}
+        showDiffCheckMarks={this.props.showDiffCheckMarks}
+        askForConfirmationOnDiscardChanges={
+          this.props.askForConfirmationOnDiscardChanges
+        }
+        onOpenBinaryFile={this.props.onOpenBinaryFile}
+        onOpenSubmodule={this.props.onOpenSubmodule}
+        onChangeImageDiffType={this.props.onChangeImageDiffType}
+        onHideWhitespaceInDiffChanged={this.onHideWhitespaceInDiffChanged}
+      />
     )
   }
 

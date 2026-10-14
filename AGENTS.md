@@ -1,9 +1,12 @@
 # GitHub Desktop fork
 
 Personal fork of GitHub Desktop, the owner's Git client for everything. It also has
-first-class support for rAthena servers (the Gear Mechanica project). Upstream
-compatibility does not matter: never preserve it at the cost of a better design, and
-never plan to contribute back. Upstream code conventions are in
+first-class support for rAthena servers (the Gear Mechanica project). Never contributed
+back, but we keep merging upstream releases: don't break upstream behavior or diverge
+from it without a reason, and prefer putting fork code in new files with thin hooks into
+upstream files (a prop, a call, a menu entry) over editing large upstream functions;
+drop that preference when it would make the design worse. Upstream code conventions are
+in
 `.github/copilot-instructions.md`. What is planned or pending is in `ROADMAP.md`;
 keep it updated when something lands.
 

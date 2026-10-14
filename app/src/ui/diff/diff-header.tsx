@@ -5,6 +5,9 @@ import { IDiff, DiffType } from '../../models/diff'
 import { Octicon, iconForStatus } from '../octicons'
 import { mapStatus } from '../../lib/status'
 import { DiffOptions } from './diff-options'
+import { Button } from '../lib/button'
+import { isMarkdownFile } from '../../lib/markdown-files'
+import * as octicons from '../octicons/octicons.generated'
 
 interface IDiffHeaderProps {
   readonly path: string
@@ -25,6 +28,10 @@ interface IDiffHeaderProps {
 
   /** Called when the user opens the diff options popover */
   readonly onDiffOptionsOpened: () => void
+
+  /** Whether a markdown file is shown rendered instead of as a diff. */
+  readonly markdownPreview?: boolean
+  readonly onMarkdownPreviewChanged?: (preview: boolean) => void
 }
 
 /** Displays information about a file */
@@ -37,6 +44,7 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
       <div className="header">
         <PathLabel path={this.props.path} status={this.props.status} />
 
+        {this.renderMarkdownToggle()}
         {this.renderDiffOptions()}
 
         <Octicon
@@ -46,6 +54,33 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
         />
       </div>
     )
+  }
+
+  private renderMarkdownToggle() {
+    const { markdownPreview, onMarkdownPreviewChanged } = this.props
+    if (
+      onMarkdownPreviewChanged === undefined ||
+      !isMarkdownFile(this.props.path)
+    ) {
+      return null
+    }
+
+    return (
+      <Button
+        className="markdown-preview-toggle"
+        size="small"
+        ariaPressed={markdownPreview === true}
+        onClick={this.onMarkdownToggleClick}
+        tooltip={markdownPreview ? 'Show the diff' : 'Show the rendered file'}
+      >
+        <Octicon symbol={markdownPreview ? octicons.code : octicons.eye} />
+        {markdownPreview ? 'Diff' : 'Preview'}
+      </Button>
+    )
+  }
+
+  private onMarkdownToggleClick = () => {
+    this.props.onMarkdownPreviewChanged?.(this.props.markdownPreview !== true)
   }
 
   private renderDiffOptions() {

@@ -1,0 +1,19 @@
+// Rendered markdown in place of a diff (app/src/ui/diff/markdown-preview.tsx).
+.diff-container {
+  .markdown-preview {
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--spacing-double) var(--spacing-triple);
+    background: var(--background-color);
+  }
+
+  .header .markdown-preview-toggle {
+    flex-shrink: 0;
+    margin-right: var(--spacing-half);
+
+    .octicon {
+      margin-right: var(--spacing-third);
+    }
+  }
+}
