@@ -9,6 +9,7 @@ interface IBranchContextMenuConfig {
   onViewPullRequestOnGitHub?: () => void
   onDeleteBranch?: (branchName: string) => void
   onCheckoutInNewWorktree?: (branch: Branch) => void
+  onPullBranch?: (branch: Branch) => void
 }
 
 export function generateBranchContextMenuItems(
@@ -21,8 +22,23 @@ export function generateBranchContextMenuItems(
     onViewPullRequestOnGitHub,
     onDeleteBranch,
     onCheckoutInNewWorktree,
+    onPullBranch,
   } = config
   const items = new Array<IMenuItem>()
+
+  if (
+    onPullBranch !== undefined &&
+    branch.type === BranchType.Local &&
+    branch.upstreamRemoteName !== null
+  ) {
+    items.push(
+      {
+        label: `Pull from ${branch.upstreamRemoteName}`,
+        action: () => onPullBranch(branch),
+      },
+      { type: 'separator' }
+    )
+  }
 
   if (onRenameBranch !== undefined) {
     items.push({

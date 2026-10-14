@@ -5,9 +5,13 @@ notes are in `AGENTS.md`.
 
 ## Features
 
-1. [ ] **Fetch a branch without checking it out** (Right Click → Fetch in the branch
-       dropdown): fast-forward with `fetch x:x`; diverged → `merge-tree`; conflicts or
-       rebase pulls → dialog offering to switch to the branch and pull.
+1. [x] **Keep other branches up to date without switching to them.**
+       - [x] Preview Pull Request fetches first, so its conflict check is current.
+       - [x] `↓3 ↑1` next to each branch in the dropdown (behind/ahead of its upstream).
+       - [x] Right Click → Pull from origin on any branch: fast-forward, or merge
+             (`merge-tree` + `commit-tree`) / rebase (`git replay`) per pull settings,
+             without checkout. Conflicts → message asking to switch and pull.
+       - [ ] One-click "switch and pull" on conflicts instead of a plain message.
 2. [ ] **Conflicts A:** find, count, navigate and display conflict markers in any
        uncommitted file (read-only, with syntax highlighting).
 3. [ ] **Named stashes:** list, names, apply/pop/drop, no per-branch overwrite.

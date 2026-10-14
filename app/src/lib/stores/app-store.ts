@@ -10034,6 +10034,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   public async _startPullRequest(repository: Repository) {
+    // Fetch first, so the conflict check runs against the base branch as it
+    // is on the remote now and not as of the last fetch.
+    await this._fetch(repository, FetchType.BackgroundTask)
+
     const { tip, defaultBranch } =
       this.repositoryStateCache.get(repository).branchesState
 

@@ -3800,6 +3800,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     return (
       <BranchDropdown
         dispatcher={this.props.dispatcher}
+        aheadBehindStore={this.props.aheadBehindStore}
         isOpen={isOpen}
         branchDropdownWidth={this.state.branchDropdownWidth}
         onDropDownStateChanged={this.onBranchDropdownStateChanged}

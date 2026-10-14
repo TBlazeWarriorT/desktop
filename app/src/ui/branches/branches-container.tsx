@@ -39,6 +39,9 @@ import {
 import { PullRequestQuickView } from '../pull-request-quick-view'
 import { Emoji } from '../../lib/emoji'
 import classNames from 'classnames'
+import { AheadBehindStore } from '../../lib/stores/ahead-behind-store'
+import { BranchSyncIndicator } from './branch-sync-indicator'
+import { pullBranch } from './pull-branch'
 
 interface IBranchesContainerProps {
   readonly dispatcher: Dispatcher
@@ -66,6 +69,9 @@ interface IBranchesContainerProps {
   readonly emoji: Map<string, Emoji>
 
   readonly underlineLinks: boolean
+
+  /** Shows ↓/↑ against each branch's upstream when given. */
+  readonly aheadBehindStore?: AheadBehindStore
 }
 
 interface IBranchesContainerState {
@@ -233,7 +239,25 @@ export class BranchesContainer extends React.Component<
       this.props.currentBranch,
       authorDate,
       this.onDropOntoBranch,
-      this.onDropOntoCurrentBranch
+      this.onDropOntoCurrentBranch,
+      this.renderSyncIndicator(item.branch)
+    )
+  }
+
+  private onPullBranch = (branch: Branch) => {
+    const { dispatcher, repository, currentBranch } = this.props
+    pullBranch(dispatcher, repository, branch, currentBranch)
+  }
+
+  private renderSyncIndicator(branch: Branch) {
+    const { aheadBehindStore, repository, allBranches } = this.props
+    return aheadBehindStore === undefined ? null : (
+      <BranchSyncIndicator
+        repository={repository}
+        branch={branch}
+        allBranches={allBranches}
+        aheadBehindStore={aheadBehindStore}
+      />
     )
   }
 
@@ -299,6 +323,7 @@ export class BranchesContainer extends React.Component<
                 ? this.props.onCheckoutInNewWorktree
                 : undefined
             }
+            onPullBranch={this.onPullBranch}
           />
         )
       case BranchesTab.PullRequests: {

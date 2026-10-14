@@ -31,6 +31,9 @@ interface IBranchListItemProps {
 
   /** When a drag element has landed on the current branch */
   readonly onDropOntoCurrentBranch?: () => void
+
+  /** Extra content after the name, e.g. the ahead/behind indicator. */
+  readonly accessory?: React.ReactNode
 }
 
 interface IBranchListItemState {
@@ -122,6 +125,7 @@ export class BranchListItem extends React.Component<
         >
           <HighlightText text={name} highlight={this.props.matches.title} />
         </TooltippedContent>
+        {this.props.accessory}
         {authorDate &&
           (getPreferAbsoluteDates() ? (
             <span className="description">{formatDate(authorDate)}</span>

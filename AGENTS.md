@@ -27,7 +27,9 @@ keep it updated when something lands.
   type errors; the background `tsc --watch` in `script/start.ts` does. Check with
   `node_modules/.bin/tsc -p tsconfig.json --noEmit` and
   `-p app/src/highlighter/tsconfig.json` (the root tsconfig excludes the highlighter).
-- Tests: `node script/test.mjs app/test/unit/<file>-test.ts`.
+- Tests: `node script/test.mjs --no-experimental-webstorage app/test/unit/<file>-test.ts`.
+  Node 25's built-in `localStorage` stub hides jsdom's, so without the flag any test that
+  imports UI code fails with `localStorage.getItem is not a function` (upstream tests too).
 
 ## rAthena syntax highlighting
 

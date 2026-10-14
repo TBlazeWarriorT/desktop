@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { AheadBehindStore } from '../../lib/stores/ahead-behind-store'
 import { Dispatcher } from '../dispatcher'
 import * as octicons from '../octicons/octicons.generated'
 import { OcticonSymbol, syncClockwise } from '../octicons'
@@ -84,6 +85,8 @@ interface IBranchDropdownProps {
   readonly enableFocusTrap: boolean
 
   readonly underlineLinks: boolean
+
+  readonly aheadBehindStore?: AheadBehindStore
 }
 
 /**
@@ -116,6 +119,7 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
         onCheckoutInNewWorktree={this.onCheckoutInNewWorktree}
         onCheckoutPRInNewWorktree={this.onCheckoutPRInNewWorktree}
         underlineLinks={this.props.underlineLinks}
+        aheadBehindStore={this.props.aheadBehindStore}
       />
     )
   }
