@@ -17,4 +17,5 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+node script\dev-build-stamp.mjs write
 call "%~dp0dev-start.bat"
