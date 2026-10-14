@@ -35,6 +35,10 @@ import { Account } from '../../models/account'
 import { Emoji } from '../../lib/emoji'
 import { formatNumber } from '../../lib/format-number'
 import { HistorySearch } from './history-search'
+import {
+  checkBranchAgainstMain,
+  IMainConflicts,
+} from '../../lib/git/main-conflicts'
 
 interface ICompareSidebarProps {
   readonly repository: Repository
@@ -79,6 +83,9 @@ interface ICompareSidebarState {
 
   /** The branch compare box replaces the search box until it is closed. */
   readonly compareOpen: boolean
+
+  /** Commits that would conflict with the remote main: tooltip per SHA. */
+  readonly conflictWarnings: ReadonlyMap<string, string>
 }
 
 /** If we're within this many rows from the bottom, load the next history batch. */
@@ -94,11 +101,17 @@ export class CompareSidebar extends React.Component<
   private commitListRef = React.createRef<CommitList>()
   private loadingMoreCommitsPromise: Promise<void> | null = null
   private resultCount = 0
+  /** Ignores results of a check that a newer one replaced. */
+  private mainConflictsRun = 0
 
   public constructor(props: ICompareSidebarProps) {
     super(props)
 
-    this.state = { focusedBranch: null, compareOpen: false }
+    this.state = {
+      focusedBranch: null,
+      compareOpen: false,
+      conflictWarnings: new Map(),
+    }
   }
 
   public componentWillReceiveProps(nextProps: ICompareSidebarProps) {
@@ -134,6 +147,13 @@ export class CompareSidebar extends React.Component<
   public componentDidUpdate(prevProps: ICompareSidebarProps) {
     const { showBranchList } = this.props.compareState
 
+    if (
+      prevProps.repository.id !== this.props.repository.id ||
+      prevProps.compareState.commitSHAs !== this.props.compareState.commitSHAs
+    ) {
+      this.checkMainConflicts()
+    }
+
     // Back to the search box once the compare is dismissed.
     const wasComparing =
       prevProps.compareState.showBranchList ||
@@ -164,6 +184,42 @@ export class CompareSidebar extends React.Component<
 
   public componentWillMount() {
     this.props.dispatcher.initializeCompare(this.props.repository)
+  }
+
+  public componentDidMount() {
+    this.checkMainConflicts()
+  }
+
+  /** Marks the branch's commits that would conflict with the remote main. */
+  private async checkMainConflicts() {
+    const run = ++this.mainConflictsRun
+    const { repository } = this.props
+    const update = ({ mainRef, conflicts }: IMainConflicts) => {
+      if (run !== this.mainConflictsRun) {
+        return
+      }
+      const warnings = new Map<string, string>()
+      for (const [sha, files] of conflicts) {
+        if (files.length > 0) {
+          const shown = files.slice(0, 5).join(', ')
+          const more = files.length > 5 ? ` and ${files.length - 5} more` : ''
+          warnings.set(
+            sha,
+            `Conflicts with ${mainRef} if merged: ${shown}${more}`
+          )
+        }
+      }
+      this.setState({ conflictWarnings: warnings })
+    }
+    const result = await checkBranchAgainstMain(repository, update).catch(e => {
+      log.error('Checking conflicts with main failed', e)
+      return null
+    })
+    if (result === null && run === this.mainConflictsRun) {
+      this.setState({ conflictWarnings: new Map() })
+    } else if (result !== null) {
+      update(result)
+    }
   }
 
   public componentWillUnmount() {
@@ -363,6 +419,7 @@ export class CompareSidebar extends React.Component<
         accounts={this.props.accounts}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
         searchMatches={search?.searchMatches}
+        conflictWarnings={this.state.conflictWarnings}
       />
     )
   }

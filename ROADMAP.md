@@ -31,9 +31,11 @@ notes are in `AGENTS.md`.
        commit opens on that file.
        - [ ] Open on the file in commits from before a rename (old name).
        - [ ] Folder history (a path prefix, no --follow).
-6. [ ] **Conflict warning against main:** on each commit, check whether the branch
-       conflicts with main (`git merge-tree --write-tree`, no checkout) and mark
-       conflicting commits with an icon.
+6. [x] **Conflict warning against main:** each of the branch's newest 50 commits
+       not in the remote main (origin/HEAD, else origin/main or master) is checked with
+       `git merge-tree --write-tree`, no checkout; conflicting ones get an orange alert
+       with the files in its tooltip. Results are cached per commit and main.
+       - [ ] Recheck right after a fetch moves origin/main (today: when the list reloads).
 7. [ ] **View whole files**, with the diff's syntax highlighting and line numbers but no
        add/remove coloring (not as "everything added"). Entry points:
        - "View whole file" on any file open in a diff (same commit);

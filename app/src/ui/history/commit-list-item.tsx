@@ -52,6 +52,8 @@ interface ICommitProps {
   readonly preferAbsoluteDates: boolean
   /** Where a history search matched, when not in the title. */
   readonly searchMatch?: string
+  /** Set when merging this commit into main would conflict: the tooltip. */
+  readonly conflictWarning?: string
 }
 
 interface ICommitListItemState {
@@ -182,13 +184,23 @@ export class CommitListItem extends React.PureComponent<
   private renderCommitIndicators() {
     const tagIndicator = renderCommitListItemTags(this.props.commit.tags)
     const unpushedIndicator = this.renderUnpushedIndicator()
-    const { searchMatch } = this.props
+    const { searchMatch, conflictWarning } = this.props
 
-    if (tagIndicator || unpushedIndicator || searchMatch) {
+    if (tagIndicator || unpushedIndicator || searchMatch || conflictWarning) {
       return (
         <div className="commit-indicators">
           {searchMatch && (
             <span className="commit-search-match">{searchMatch}</span>
+          )}
+          {conflictWarning && (
+            <TooltippedContent
+              tagName="div"
+              className="commit-conflict-warning"
+              tooltip={conflictWarning}
+              disabled={enableAccessibleListToolTips()}
+            >
+              <Octicon symbol={octicons.alert} />
+            </TooltippedContent>
           )}
           {tagIndicator}
           {unpushedIndicator}

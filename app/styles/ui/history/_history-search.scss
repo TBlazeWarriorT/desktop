@@ -67,3 +67,16 @@
     color: var(--text-secondary-color);
   }
 }
+
+// Commit that would conflict with the remote main
+// (app/src/lib/git/main-conflicts.ts).
+#compare-view .commit-conflict-warning,
+.commit-list-item-tooltip .commit-conflict-warning {
+  display: flex;
+  align-items: center;
+  margin-right: var(--spacing-half);
+
+  .octicon {
+    fill: var(--color-conflicted);
+  }
+}

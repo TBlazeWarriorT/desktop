@@ -185,6 +185,9 @@ interface ICommitListProps {
   /** Search results: where the query matched, shown next to each commit. */
   readonly searchMatches?: ReadonlyMap<string, string>
 
+  /** Commits that would conflict with main, and the tooltip explaining it. */
+  readonly conflictWarnings?: ReadonlyMap<string, string>
+
   /** This will make the list semantics friendly to screen reader users in browse mode. */
   readonly isInformationalView?: boolean
 }
@@ -315,6 +318,7 @@ export class CommitList extends React.Component<
         accounts={this.props.accounts}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
         searchMatch={this.props.searchMatches?.get(commit.sha)}
+        conflictWarning={this.props.conflictWarnings?.get(commit.sha)}
       />
     )
   }
@@ -551,7 +555,34 @@ export class CommitList extends React.Component<
             </div>
           </div>
         ) : null}
+        {this.renderForkTooltipRows(commit.sha)}
       </div>
+    )
+  }
+
+  /** Conflict warning and search match, in the row's own tooltip. */
+  private renderForkTooltipRows(sha: string) {
+    const warning = this.props.conflictWarnings?.get(sha)
+    const match = this.props.searchMatches?.get(sha)
+    return (
+      <>
+        {warning && (
+          <div>
+            <div className="label">
+              <span className="commit-conflict-warning">
+                <Octicon symbol={octicons.alert} />
+              </span>
+            </div>
+            <div>{warning}</div>
+          </div>
+        )}
+        {match && (
+          <div>
+            <div className="label">Search: </div>
+            Matched {match}
+          </div>
+        )}
+      </>
     )
   }
 

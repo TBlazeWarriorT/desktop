@@ -278,6 +278,12 @@ File history: Right Click \`npc/custom/healer.txt\` (in Changes, or in a commit'
 list) > Show history. History shows only the commits that changed it, each opening
 on that file; type in the box to search within them; click the file chip to go back.
 
+## Conflict warning against main
+
+Switch to \`merge-me-conflict\` or \`pull/conflict\`: in History, their own commit gets
+an orange alert (hover: "Conflicts with origin/main if merged: npc/custom/healer.txt").
+\`pull/ahead\` changes other files, so it has no alert.
+
 ## Branches and pulling without switching
 
 Open the branch dropdown: each branch shows ↓behind ↑ahead of \`origin\`.
