@@ -22,6 +22,7 @@ import {
   IAPIBranch,
   IAPIFullRepository,
   GitHubAccountType,
+  getHTMLURL,
 } from '../api'
 import { TypedBaseStore } from './base-store'
 import { WorkflowPreferences } from '../../models/workflow-preferences'
@@ -128,7 +129,10 @@ export class RepositoriesStore extends TypedBaseStore<
       owner,
       repo.id,
       repo.private,
-      repo.htmlURL,
+      // Fork: when the API can't be read (e.g. an org blocking the OAuth app)
+      // the page URL is still known, so "View on GitHub" keeps working.
+      repo.htmlURL ??
+        `${getHTMLURL(owner.endpoint)}/${owner.login}/${repo.name}`,
       repo.cloneURL,
       repo.issuesEnabled,
       repo.isArchived,
