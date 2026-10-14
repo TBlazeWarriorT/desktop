@@ -457,6 +457,17 @@ $overlay-background-color: rgba(0, 0, 0, 0.4);
   --syntax-header-color: #0000ff;
   --syntax-quote-color: #1a7e31;
 
+  // rAthena script colors (IntelliJ Light take on the NP++ Darcula UDL)
+  --rathena-command-color: #0033b3;
+  --rathena-var-scope-color: #1750eb;
+  --rathena-var-global-color: #9e880d;
+  --rathena-label-color: #c7222d;
+  --rathena-constant-color: #871094;
+  --rathena-string-color: #067d17;
+  --rathena-comment-color: #8c8c8c;
+  --rathena-brace-color: #3a6ea5;
+  --rathena-npc-name-color: #00627a;
+
   // Note that this duration *must* match the `UndoCommitAnimationTimeout`
   // specified in `changes/index.tsx`.
   --undo-animation-duration: 500ms;

@@ -10,6 +10,7 @@ import {
 } from 'codemirror/addon/runmode/runmode.node.js'
 
 import { ITokens, IHighlightRequest } from '../lib/highlighter/types'
+import { looksLikeRathenaScript } from './rathena'
 
 /**
  * A mode definition object is used to map a certain file
@@ -535,9 +536,20 @@ function guessMimeType(contents: ReadonlyArray<string>) {
   return null
 }
 
+const rathenaExtensions = new Set(['.txt', '.cpp'])
+
 async function detectMode(
   request: IHighlightRequest
 ): Promise<CodeMirror.Mode<{}> | null> {
+  // rAthena scripts are .txt (or .cpp by our convention), told apart by content.
+  if (
+    rathenaExtensions.has(request.extension.toLowerCase()) &&
+    looksLikeRathenaScript(request.contentLines)
+  ) {
+    const baseline = await import('../lib/rathena/baseline.json')
+    return getMode({}, { name: 'rathena', definitions: baseline.default })
+  }
+
   const mimeType =
     extensionMIMEMap.get(request.extension.toLowerCase()) ||
     basenameMIMEMap.get(request.basename.toLowerCase()) ||

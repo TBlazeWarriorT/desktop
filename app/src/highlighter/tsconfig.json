@@ -13,6 +13,7 @@
     "strict": true,
     "outDir": "../../../out",
     "lib": ["scripthost", "webworker", "es2021"],
+    "resolveJsonModule": true,
     "types": []
   },
   "compileOnSave": false

@@ -195,6 +195,9 @@ declare namespace CodeMirror {
      */
     public indentation(): number
 
+    /** Returns the line n lines below the current one, if any. */
+    public lookAhead(n: number): string | undefined
+
     /**
      * Get the string between the start of the current token and the current stream position.
      */

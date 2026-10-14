@@ -353,6 +353,7 @@ export function syntaxHighlightLine(
             className={classNames(
               [...element.tokens.keys()].map(name => `cm-${name}`)
             )}
+            style={rathenaColorStyle(element.tokens)}
           >
             {element.content}
           </span>
@@ -360,6 +361,22 @@ export function syntaxHighlightLine(
       })}
     </>
   )
+}
+
+/** Paints rAthena `^RRGGBB` codes as a swatch of their own color. */
+function rathenaColorStyle(
+  tokens: Map<string, number>
+): React.CSSProperties | undefined {
+  for (const name of tokens.keys()) {
+    const m = /^rathena-color-([0-9a-f]{6})$/.exec(name)
+    if (m) {
+      const n = parseInt(m[1], 16)
+      const luma =
+        0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)
+      return { background: `#${m[1]}`, color: luma > 140 ? '#000' : '#fff' }
+    }
+  }
+  return undefined
 }
 
 /** Utility function for checking whether a file supports selection */

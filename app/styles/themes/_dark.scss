@@ -360,6 +360,17 @@ body.theme-dark {
   --syntax-header-color: #{$red-300};
   --syntax-quote-color: #{$green-400};
 
+  // rAthena script colors, from the NP++ Darcula UDL
+  --rathena-command-color: #cc7832;
+  --rathena-var-scope-color: #6897bb;
+  --rathena-var-global-color: #bbb529;
+  --rathena-label-color: #ff5640;
+  --rathena-constant-color: #9876aa;
+  --rathena-string-color: #629755;
+  --rathena-comment-color: #808080;
+  --rathena-brace-color: #89a6ce;
+  --rathena-npc-name-color: #ffc66d;
+
   // Colors for form errors
   --error-color: #{$red};
   --form-error-background: #{darken($red-900, 3%)};

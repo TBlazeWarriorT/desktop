@@ -765,6 +765,63 @@
     }
   }
 
+  .cm-m-rathena {
+    &.cm-rathena-command,
+    &.cm-rathena-keyword,
+    &.cm-rathena-header-type {
+      color: var(--rathena-command-color);
+    }
+    &.cm-rathena-var-scope,
+    &.cm-number {
+      color: var(--rathena-var-scope-color);
+    }
+    &.cm-rathena-var-global {
+      color: var(--rathena-var-global-color);
+    }
+    &.cm-rathena-label,
+    &.cm-rathena-bool {
+      color: var(--rathena-label-color);
+    }
+    &.cm-rathena-constant,
+    &.cm-rathena-param {
+      color: var(--rathena-constant-color);
+      font-weight: 600;
+    }
+    &.cm-string {
+      color: var(--rathena-string-color);
+    }
+    &.cm-comment {
+      color: var(--rathena-comment-color);
+      font-style: italic;
+    }
+    &.cm-rathena-todo {
+      color: var(--rathena-label-color);
+      font-weight: 600;
+    }
+    &.cm-rathena-brace {
+      color: var(--rathena-brace-color);
+    }
+    &.cm-rathena-operator {
+      font-weight: 600;
+    }
+    &.cm-rathena-deprecated {
+      text-decoration: line-through;
+    }
+    &.cm-rathena-map,
+    &.cm-rathena-npc-name {
+      color: var(--rathena-npc-name-color);
+      font-weight: 600;
+    }
+    &.cm-rathena-npc-hidden,
+    &.cm-rathena-npc-unique {
+      color: var(--rathena-comment-color);
+    }
+    // Background and text color are set inline from the code itself.
+    &.cm-rathena-color {
+      border-radius: 2px;
+    }
+  }
+
   // Intra line markings takes precedence over syntax highlighting.
   .cm-diff-delete-inner {
     color: var(--diff-delete-text-color) !important;
