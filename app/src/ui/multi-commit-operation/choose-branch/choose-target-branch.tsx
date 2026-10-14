@@ -15,6 +15,7 @@ import {
 import { ClickSource } from '../../lib/list'
 import { getDefaultAriaLabelForBranch } from '../../branches/branch-renderer'
 import { Repository } from '../../../models/repository'
+import { isInCurrentHistory } from '../../../lib/git/commit-position'
 
 interface IChooseTargetBranchDialogProps {
   readonly repository: Repository
@@ -43,6 +44,9 @@ interface IChooseTargetBranchDialogProps {
    */
   readonly commitCount: number
 
+  /** The commits; when none is in the current branch, it can be the target. */
+  readonly commitSHAs?: ReadonlyArray<string>
+
   /**
    * A function that's called when the user selects a branch and hits start
    * cherry pick
@@ -62,6 +66,8 @@ interface IChooseTargetBranchDialogProps {
 }
 
 interface IChooseTargetBranchDialogState {
+  /** No commit is in the current branch, so it's a valid target too. */
+  readonly commitsOutsideCurrent: boolean
   /** The currently selected branch. */
   readonly selectedBranch: Branch | null
 
@@ -84,6 +90,7 @@ export class ChooseTargetBranchDialog extends React.Component<
       selectedBranch: null,
       filterText: '',
       isCreateBranchState: props.allBranches.length === 0,
+      commitsOutsideCurrent: false,
     }
   }
 
@@ -137,13 +144,25 @@ export class ChooseTargetBranchDialog extends React.Component<
   }
 
   private selectedBranchIsCurrentBranch() {
-    const { selectedBranch } = this.state
+    const { selectedBranch, commitsOutsideCurrent } = this.state
     const currentBranch = this.props.currentBranch
     return (
       selectedBranch !== null &&
       currentBranch !== null &&
-      selectedBranch.name === currentBranch.name
+      selectedBranch.name === currentBranch.name &&
+      !commitsOutsideCurrent
     )
+  }
+
+  public async componentDidMount() {
+    const { repository, commitSHAs } = this.props
+    if (commitSHAs === undefined || commitSHAs.length === 0) {
+      return
+    }
+    const inCurrent = await Promise.all(
+      commitSHAs.map(sha => isInCurrentHistory(repository, sha))
+    )
+    this.setState({ commitsOutsideCurrent: !inCurrent.some(x => x) })
   }
 
   private renderOkButtonText() {

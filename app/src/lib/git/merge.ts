@@ -24,6 +24,9 @@ export type MergeOptions = {
   readonly squash?: boolean
   /** Whether to bypass pre-merge and post-merge hooks */
   readonly noVerify?: boolean
+
+  /** `-X` options, e.g. `ignore-space-change`. */
+  readonly strategyOptions?: ReadonlyArray<string>
 } & HookCallbackOptions
 
 /** Merge the named branch into the current branch. */
@@ -46,6 +49,10 @@ export async function merge(
 
   if (options?.noVerify) {
     args.push('--no-verify')
+  }
+
+  for (const option of options?.strategyOptions ?? []) {
+    args.push('-X', option)
   }
 
   args.push('--', branch)

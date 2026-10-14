@@ -615,6 +615,9 @@ export type RemoteChange =
   | { readonly kind: 'remove'; readonly name: string }
 
 export class AppStore extends TypedBaseStore<IAppState> {
+  /** Repositories whose History shows search results (see `HistorySearch`). */
+  private readonly historySearchActive = new Set<string>()
+
   private readonly gitStoreCache: GitStoreCache
 
   private accounts: ReadonlyArray<Account> = new Array<Account>()
@@ -1746,6 +1749,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
         ? state.commitSelection.shas[0]
         : null
 
+    // Search results come from anywhere in the repo, not this list.
+    if (this.historySearchActive.has(repository.hash)) {
+      return
+    }
+
     if (selectedSHA != null) {
       const index = commitSHAs.findIndex(sha => sha === selectedSHA)
       if (index < 0) {
@@ -1759,6 +1767,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (selectedSHA === null && commitSHAs.length > 0) {
       this._changeCommitSelection(repository, [commitSHAs[0]], true)
       this._loadChangedFilesForCurrentSelection(repository)
+    }
+  }
+
+  /** This shouldn't be called directly. See `Dispatcher`. */
+  public _setHistorySearchActive(repository: Repository, active: boolean) {
+    if (active) {
+      this.historySearchActive.add(repository.hash)
+    } else {
+      this.historySearchActive.delete(repository.hash)
     }
   }
 
@@ -7515,7 +7532,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     sourceBranch: Branch,
     mergeStatus: MergeTreeResult | null,
-    isSquash: boolean = false
+    isSquash: boolean = false,
+    strategyOptions: ReadonlyArray<string> = []
   ): Promise<void> {
     const { multiCommitOperationState: opState } =
       this.repositoryStateCache.get(repository)
@@ -7554,6 +7572,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     let aborted = false
     const mergeResult = await gitStore.merge(sourceBranch, {
       squash: isSquash,
+      strategyOptions,
       onHookFailure: this.onHookFailure(() => (aborted = true)),
     })
 
@@ -9521,7 +9540,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
   /** This shouldn't be called directly. See `Dispatcher`. */
   public async _cherryPick(
     repository: Repository,
-    commits: ReadonlyArray<CommitOneLine>
+    commits: ReadonlyArray<CommitOneLine>,
+    strategyOptions: ReadonlyArray<string> = []
   ): Promise<CherryPickResult> {
     if (commits.length === 0) {
       log.error('[_cherryPick] - Unable to cherry-pick. No commits provided.')
@@ -9536,7 +9556,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.getMultiCommitOperationProgressCallBack(repository)
     const gitStore = this.gitStoreCache.get(repository)
     const result = await gitStore.performFailableOperation(() =>
-      cherryPick(repository, orderedCommits, progressCallback)
+      cherryPick(repository, orderedCommits, progressCallback, strategyOptions)
     )
 
     return result || CherryPickResult.Error

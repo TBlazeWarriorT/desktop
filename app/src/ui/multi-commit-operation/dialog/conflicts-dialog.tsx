@@ -44,6 +44,8 @@ interface IConflictsDialogProps {
   readonly abortButton: string
   readonly onSubmit: () => Promise<void>
   readonly onAbort: () => Promise<void>
+  /** Cherry-pick and merge: start over with `-X ignore-space-change`. */
+  readonly onRetryIgnoringWhitespace?: () => void
   readonly onDismissed: () => void
   readonly openFileInExternalEditor: (path: string) => void
   readonly openRepositoryInShell: (repository: Repository) => void
@@ -330,13 +332,27 @@ export class ConflictsDialog extends React.Component<
       />
     )
 
-    if (copilotButton === null) {
+    const retryButton =
+      this.props.onRetryIgnoringWhitespace === undefined ? null : (
+        <Button
+          onClick={this.props.onRetryIgnoringWhitespace}
+          disabled={this.state.isAborting || this.state.isCommitting}
+          tooltip="Starts over ignoring whitespace changes, which often clears conflicts from reindented code. Resolutions made so far are lost; check the indentation of what comes in."
+        >
+          Retry ignoring whitespace
+        </Button>
+      )
+
+    if (copilotButton === null && retryButton === null) {
       return buttonGroup
     }
 
     return (
       <div className="conflicts-footer-with-copilot">
-        {copilotButton}
+        <div className="conflicts-footer-extra">
+          {copilotButton}
+          {retryButton}
+        </div>
         {buttonGroup}
       </div>
     )

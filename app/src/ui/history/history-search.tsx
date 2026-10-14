@@ -93,13 +93,23 @@ export class HistorySearch extends React.Component<
     }
   }
 
+  /** Tells the store to keep a selected result when History reloads. */
+  private syncActive() {
+    this.props.dispatcher.setHistorySearchActive(
+      this.props.repository,
+      this.active
+    )
+  }
+
   public componentDidMount() {
+    this.syncActive()
     if (this.props.filePath !== null) {
       this.scheduleSearch(0)
     }
   }
 
   public componentDidUpdate(prevProps: IHistorySearchProps) {
+    this.syncActive()
     if (prevProps.repository.id !== this.props.repository.id) {
       this.onQueryChanged('')
     } else if (prevProps.filePath !== this.props.filePath) {
@@ -109,6 +119,7 @@ export class HistorySearch extends React.Component<
 
   public componentWillUnmount() {
     this.cancel()
+    this.props.dispatcher.setHistorySearchActive(this.props.repository, false)
   }
 
   /** Back to the normal history, e.g. to show a result among its neighbors. */
@@ -116,9 +127,12 @@ export class HistorySearch extends React.Component<
     this.onQueryChanged('')
   }
 
+  private get active() {
+    return this.state.query.trim() !== '' || this.props.filePath !== null
+  }
+
   public render() {
-    const active =
-      this.state.query.trim() !== '' || this.props.filePath !== null
+    const active = this.active
     return (
       <>
         {this.renderBar()}

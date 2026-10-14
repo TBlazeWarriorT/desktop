@@ -27,7 +27,8 @@ notes are in `AGENTS.md`.
 4. [x] **History search** by message, author and SHA.
        - [x] Each result shows the branches that contain it ("main +2", all in the tooltip).
        - [x] Right Click a result > Show in history: the full list, scrolled to it and
-             selected (disabled for commits outside the current branch).
+             selected (disabled for commits outside the current branch). Cherry-pick
+             accepts the current branch as the target when the commits aren't in it.
 5. [x] **File history:** Right Click a file → every commit that changed it
        (`git log --follow`). "Show history" in Changes and in a commit's files; the file
        becomes a chip in the History search (searchable, renames followed), and each
@@ -64,6 +65,10 @@ notes are in `AGENTS.md`.
         - [ ] "Resolve here" next to "Open in editor" in the conflicts dialog.
         - [ ] Pop-out window.
         - [ ] Three-pane layout (current | incoming over the result), if inline falls short.
+        - [x] "Retry ignoring whitespace" in the conflicts dialog of cherry-pick and merge:
+              aborts and starts over with `-X ignore-space-change` (clears conflicts
+              from reindented code; what comes in keeps its own indentation).
+        - [ ] Same retry for rebase.
 11. [x] **Remotes/upstreams:** Repository > Remotes… lists every remote, with add (URL
         or local folder, then fetch), edit name/URL, remove and per-remote Fetch (a plain
         Fetch only covers the default remote and a fork's parent).

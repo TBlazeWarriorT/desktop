@@ -258,6 +258,9 @@ and nothing reaches GitHub.
   Both, incoming first above it; anything can be typed too (Alt+↑/↓ moves lines,
   Ctrl+F searches, Ctrl+Z undoes). Switch files and back: unsaved edits are still
   there. Ctrl+S with no markers left: the file stops being conflicted.
+- The conflicts dialog of a cherry-pick or merge has Retry ignoring whitespace: it
+  aborts and starts over with \`-X ignore-space-change\` (helps when one side only
+  reindented the code).
 
 ## Stashes
 
@@ -289,7 +292,8 @@ Each result shows the branches that contain it (\`main +3\`; hover for all). The
 title on two SHAs in different branches shows two different chips.
 Right Click a result > Show in history: the search closes and History shows the
 commit selected among its neighbors. With *All branches*, the remote-only pull/*
-commits have it disabled ("not in the current branch").
+commits have it disabled ("not in this branch"); their Cherry-pick commit… accepts
+the current branch as the target. Alt+Tab away and back: the result stays selected.
 
 File history: Right Click \`npc/custom/healer.txt\` (in Changes, or in a commit's file
 list) > Show history. History shows only the commits that changed it, each opening

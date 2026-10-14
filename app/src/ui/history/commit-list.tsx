@@ -769,7 +769,7 @@ export class CommitList extends React.Component<
             ? __DARWIN__
               ? 'Show in History'
               : 'Show in history'
-            : 'Show in history (not in the current branch)',
+            : 'Show in history (not in this branch)',
           action: () => onShowInHistory(sha),
           enabled: inHistory,
         })

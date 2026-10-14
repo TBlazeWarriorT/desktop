@@ -245,6 +245,66 @@ export class Dispatcher {
   }
 
   /** Load the next batch of history for the repository. */
+  /**
+   * Aborts a conflicted cherry-pick or merge and starts it again ignoring
+   * whitespace changes, which often clears conflicts left by reindenting.
+   */
+  public async retryIgnoringWhitespace(
+    repository: Repository,
+    state: IMultiCommitOperationState
+  ): Promise<void> {
+    const { operationDetail, targetBranch } = state
+    const strategyOptions = ['ignore-space-change']
+
+    if (
+      operationDetail.kind === MultiCommitOperationKind.CherryPick &&
+      targetBranch !== null
+    ) {
+      const { commits, sourceBranch } = operationDetail
+      await this.abortCherryPick(repository, sourceBranch)
+      this.initializeMultiCommitOperationStateCherryPick(
+        repository,
+        targetBranch,
+        commits,
+        sourceBranch
+      )
+      this.showPopup({ type: PopupType.MultiCommitOperation, repository })
+      return this.cherryPick(
+        repository,
+        targetBranch,
+        commits,
+        sourceBranch,
+        strategyOptions
+      )
+    }
+
+    if (
+      operationDetail.kind === MultiCommitOperationKind.Merge &&
+      operationDetail.sourceBranch !== null
+    ) {
+      const { isSquash, sourceBranch } = operationDetail
+      await (isSquash
+        ? this.abortSquashMerge(repository)
+        : this.abortMerge(repository))
+      this.endMultiCommitOperation(repository)
+      this.initializeMergeOperation(repository, isSquash, sourceBranch)
+      this.showPopup({ type: PopupType.MultiCommitOperation, repository })
+      await this.switchMultiCommitOperationToShowProgress(repository)
+      return this.mergeBranch(
+        repository,
+        sourceBranch,
+        null,
+        isSquash,
+        strategyOptions
+      )
+    }
+  }
+
+  /** While set, a History reload keeps a selected commit it doesn't list. */
+  public setHistorySearchActive(repository: Repository, active: boolean) {
+    this.appStore._setHistorySearchActive(repository, active)
+  }
+
   /** Selects a commit in History, loading it first; null if not in HEAD. */
   public showCommitInHistory(
     repository: Repository,
@@ -1316,9 +1376,16 @@ export class Dispatcher {
     repository: Repository,
     branch: Branch,
     mergeStatus: MergeTreeResult | null,
-    isSquash: boolean = false
+    isSquash: boolean = false,
+    strategyOptions: ReadonlyArray<string> = []
   ): Promise<void> {
-    return this.appStore._mergeBranch(repository, branch, mergeStatus, isSquash)
+    return this.appStore._mergeBranch(
+      repository,
+      branch,
+      mergeStatus,
+      isSquash,
+      strategyOptions
+    )
   }
 
   /**
@@ -3097,7 +3164,8 @@ export class Dispatcher {
     repository: Repository,
     targetBranch: Branch,
     commits: ReadonlyArray<CommitOneLine>,
-    sourceBranch: Branch | null
+    sourceBranch: Branch | null,
+    strategyOptions: ReadonlyArray<string> = []
   ): Promise<void> {
     // If uncommitted changes are stashed, we had to clear the multi commit
     // operation in case user hit cancel. (This method only sets it, if it null)
@@ -3148,7 +3216,11 @@ export class Dispatcher {
       return
     }
 
-    const result = await this.appStore._cherryPick(repository, commits)
+    const result = await this.appStore._cherryPick(
+      repository,
+      commits,
+      strategyOptions
+    )
 
     if (result !== CherryPickResult.UnableToStart) {
       this.logHowToRevertCherryPick(nameAfterCheckout, tip.sha)

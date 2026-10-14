@@ -141,7 +141,9 @@ function configureOptionsWithCallBack<T extends IGitExecutionOptions>(
 export async function cherryPick(
   repository: Repository,
   commits: ReadonlyArray<CommitOneLine>,
-  progressCallback?: (progress: IMultiCommitOperationProgress) => void
+  progressCallback?: (progress: IMultiCommitOperationProgress) => void,
+  /** `-X` options, e.g. `ignore-space-change`; kept for every commit. */
+  strategyOptions: ReadonlyArray<string> = []
 ): Promise<CherryPickResult> {
   if (commits.length === 0) {
     return CherryPickResult.UnableToStart
@@ -172,7 +174,13 @@ export async function cherryPick(
   //  there could be multiple empty commits. I.E. If user does a range that
   //  includes commits from that merge.
   const result = await git(
-    ['cherry-pick', ...commits.map(c => c.sha), '--empty=keep', '-m 1'],
+    [
+      'cherry-pick',
+      ...strategyOptions.flatMap(option => ['-X', option]),
+      ...commits.map(c => c.sha),
+      '--empty=keep',
+      '-m 1',
+    ],
     repository.path,
     'cherry-pick',
     baseOptions

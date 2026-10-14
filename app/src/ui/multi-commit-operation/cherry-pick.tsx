@@ -92,6 +92,7 @@ export abstract class CherryPick extends BaseMultiCommitOperation {
         onCherryPick={this.onChooseBranch}
         onDismissed={this.onFlowEnded}
         commitCount={commits.length}
+        commitSHAs={commits.map(c => c.sha)}
         onCreateNewBranch={this.onCreateNewBranch}
       />
     )

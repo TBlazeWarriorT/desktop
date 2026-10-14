@@ -7,7 +7,10 @@ import { Dispatcher } from '../dispatcher'
 import { getResolvedFiles, getConflictedFiles } from '../../lib/status'
 import { ConflictState, IMultiCommitOperationState } from '../../lib/app-state'
 import { Branch } from '../../models/branch'
-import { MultiCommitOperationStepKind } from '../../models/multi-commit-operation'
+import {
+  MultiCommitOperationKind,
+  MultiCommitOperationStepKind,
+} from '../../models/multi-commit-operation'
 import { ConflictsDialog } from './dialog/conflicts-dialog'
 import { ConfirmAbortDialog } from './dialog/confirm-abort-dialog'
 import { ProgressDialog } from './dialog/progress-dialog'
@@ -79,6 +82,11 @@ export abstract class BaseMultiCommitOperation extends React.Component<IMultiCom
   protected abstract onConflictsDialogDismissed: () => void
   protected abstract renderChooseBranch: () => JSX.Element | null
   protected abstract renderCreateBranch: () => JSX.Element | null
+
+  private onRetryIgnoringWhitespace = () => {
+    const { dispatcher, repository, state } = this.props
+    dispatcher.retryIgnoringWhitespace(repository, state)
+  }
 
   /** Initiate Copilot conflict resolution for the current operation. */
   protected onResolveWithCopilot = () => {
@@ -284,6 +292,12 @@ export abstract class BaseMultiCommitOperation extends React.Component<IMultiCom
             abortButton={abort}
             onSubmit={this.onContinueAfterConflicts}
             onAbort={this.onConfirmingAbort}
+            onRetryIgnoringWhitespace={
+              operationDetail.kind === MultiCommitOperationKind.CherryPick ||
+              operationDetail.kind === MultiCommitOperationKind.Merge
+                ? this.onRetryIgnoringWhitespace
+                : undefined
+            }
             onDismissed={this.onConflictsDialogDismissed}
             openFileInExternalEditor={openFileInExternalEditor}
             openRepositoryInShell={openRepositoryInShell}

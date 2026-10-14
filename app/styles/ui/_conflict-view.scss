@@ -65,3 +65,11 @@
     }
   }
 }
+
+// Copilot and "Retry ignoring whitespace" on the left of the conflicts
+// dialog's footer (app/src/ui/multi-commit-operation/dialog/conflicts-dialog.tsx).
+.conflicts-footer-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-half);
+}
