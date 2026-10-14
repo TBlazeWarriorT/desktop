@@ -15,7 +15,7 @@ import { IViewMode, ViewModeSwitcher } from './view-mode-switcher'
 
 import * as octicons from '../octicons/octicons.generated'
 
-const viewModeInfo: Record<ViewMode, Omit<IViewMode<ViewMode>, 'id'>> = {
+export const viewModeInfo: Record<ViewMode, Omit<IViewMode<ViewMode>, 'id'>> = {
   conflicts: {
     label: 'Conflicts',
     icon: octicons.alert,

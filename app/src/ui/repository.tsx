@@ -679,11 +679,17 @@ export class RepositoryView extends React.Component<
           commitish={state.filesCommitish}
           path={state.filesSelectedPath}
           reloadKey={state.changesState.workingDirectory}
+          emoji={this.props.emoji}
+          onLinkClicked={this.onFilesLinkClicked}
         />
       )
     } else {
       return assertNever(selectedSection, 'Unknown repository section')
     }
+  }
+
+  private onFilesLinkClicked = (url: string) => {
+    this.props.dispatcher.openInBrowser(url)
   }
 
   public render() {

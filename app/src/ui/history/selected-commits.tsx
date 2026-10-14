@@ -31,6 +31,7 @@ import { SeamlessDiffSwitcher } from '../diff/seamless-diff-switcher'
 import {
   MarkdownPreview,
   getMarkdownPreview,
+  getPreviewSource,
   setMarkdownPreview,
 } from '../diff/markdown-preview'
 import { FileView } from '../diff/file-view'
@@ -207,7 +208,8 @@ export class SelectedCommits extends React.Component<
           {this.renderDiffHeader()}
           <MarkdownPreview
             repository={this.props.repository}
-            file={file}
+            path={file.path}
+            source={getPreviewSource(file)}
             emoji={this.props.emoji}
             onLinkClicked={this.onMarkdownLinkClicked}
           />

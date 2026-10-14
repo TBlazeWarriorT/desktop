@@ -1,6 +1,7 @@
 // Rendered markdown in place of a diff (app/src/ui/diff/markdown-preview.tsx),
-// and the header view switcher shared with the conflict view.
-.diff-container {
+// and the header view switcher shared with the conflict view and the Files tab.
+.diff-container,
+.files-content {
   .markdown-preview {
     flex-grow: 1;
     min-height: 0;
@@ -10,7 +11,8 @@
   }
 
   // Conflicts / Diff / Preview (app/src/ui/diff/view-mode-switcher.tsx).
-  .header .view-mode-switcher {
+  .header .view-mode-switcher,
+  .files-content-header .view-mode-switcher {
     display: flex;
     flex-shrink: 0;
     margin-right: var(--spacing-half);

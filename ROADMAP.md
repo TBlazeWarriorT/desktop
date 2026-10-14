@@ -24,7 +24,7 @@ notes are in `AGENTS.md`.
        - [x] Stash all changes asks for an optional name; Right Click files → Stash
              selected files. Names go before Desktop's marker, so the official app
              still reads them.
-4. [ ] **History search** by message, author and SHA.
+4. [x] **History search** by message, author and SHA.
 5. [x] **File history:** Right Click a file → every commit that changed it
        (`git log --follow`). "Show history" in Changes and in a commit's files; the file
        becomes a chip in the History search (searchable, renames followed), and each
@@ -47,7 +47,7 @@ notes are in `AGENTS.md`.
 8. [ ] **Markdown preview** like github.com.
        - [x] Preview/Diff button on `.md` diffs (Changes and History), remembering the last
              choice; relative images inlined from the right version of the file.
-       - [ ] Same preview in the viewer from 7.
+       - [x] Same preview in the viewer from 7 (File/Preview in the Files tab header).
        - [ ] Relative links between `.md` files (only https links open today, in the browser).
 9. [ ] **Simple built-in text editor.**
 10. [ ] **Conflicts B:** merge editor (pick one/other/both, edit, reorder lines; pop-out

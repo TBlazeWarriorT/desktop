@@ -244,6 +244,8 @@ and nothing reaches GitHub.
 
 - \`README.md\` has uncommitted edits: use Preview/Diff in its header.
   The logo is a relative image.
+- In the Files tab, \`README.md\` has File/Preview in its header, on disk and
+  when browsing a commit.
 
 ## Conflicts
 

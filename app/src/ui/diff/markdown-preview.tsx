@@ -9,7 +9,7 @@ import {
 } from '../../models/status'
 import { Emoji } from '../../lib/emoji'
 import { getPartialBlobContents } from '../../lib/git/show'
-import { getFileContents } from './syntax-highlighting'
+import { WholeFileSource, loadWholeFile } from './whole-file-lines'
 import { SandboxedMarkdown } from '../lib/sandboxed-markdown'
 import { getBoolean, setBoolean } from '../../lib/local-storage'
 import {
@@ -39,18 +39,30 @@ const imageMimeTypes: Record<string, string> = {
   '.bmp': 'image/bmp',
 }
 
-/** Reads a repository file as it is in the working tree or in the file's commit. */
+/** The version a changed file is previewed in: the new one, or the old if deleted. */
+export function getPreviewSource(file: ChangedFile): WholeFileSource {
+  const deleted = file.status.kind === AppFileStatusKind.Deleted
+  if (file instanceof WorkingDirectoryFileChange) {
+    return deleted ? { kind: 'commit', commitish: 'HEAD' } : { kind: 'disk' }
+  }
+  return {
+    kind: 'commit',
+    commitish: deleted ? file.parentCommitish : file.commitish,
+  }
+}
+
+/** Reads a repository file as it is in the working tree or in a commit. */
 async function readRepoFile(
   repository: Repository,
-  file: ChangedFile,
+  source: WholeFileSource,
   path: string
 ): Promise<Buffer | null> {
-  if (file instanceof WorkingDirectoryFileChange) {
+  if (source.kind === 'disk') {
     return readFile(Path.join(repository.path, path)).catch(() => null)
   }
   return getPartialBlobContents(
     repository,
-    file.commitish,
+    source.commitish,
     path,
     MaxImageBytes
   ).catch(() => null)
@@ -64,15 +76,16 @@ async function readRepoFile(
 async function inlineImages(
   markdown: string,
   repository: Repository,
-  file: ChangedFile
+  path: string,
+  source: WholeFileSource
 ): Promise<string> {
   const dataUris = new Map<string, string>()
 
   for (const re of imagePatterns) {
     for (const [, , src] of markdown.matchAll(re)) {
-      const target = dataUris.has(src) ? null : resolveImagePath(src, file.path)
+      const target = dataUris.has(src) ? null : resolveImagePath(src, path)
       const mime = target && imageMimeTypes[Path.extname(target).toLowerCase()]
-      const data = mime ? await readRepoFile(repository, file, target!) : null
+      const data = mime ? await readRepoFile(repository, source, target!) : null
       if (data && data.length <= MaxImageBytes) {
         dataUris.set(src, `data:${mime};base64,${data.toString('base64')}`)
       }
@@ -91,7 +104,10 @@ async function inlineImages(
 
 interface IMarkdownPreviewProps {
   readonly repository: Repository
-  readonly file: ChangedFile
+  readonly path: string
+  readonly source: WholeFileSource
+  /** Reloads when this changes, e.g. the diff the app reloaded. */
+  readonly reloadKey?: unknown
   readonly emoji: Map<string, Emoji>
   readonly onLinkClicked: (url: string) => void
 }
@@ -100,7 +116,7 @@ interface IMarkdownPreviewState {
   readonly markdown: string | null
 }
 
-/** The whole file rendered, in its new version (or the old one if deleted). */
+/** A markdown file rendered, from the working directory or a commit. */
 export class MarkdownPreview extends React.Component<
   IMarkdownPreviewProps,
   IMarkdownPreviewState
@@ -117,20 +133,27 @@ export class MarkdownPreview extends React.Component<
   }
 
   public componentDidUpdate(prevProps: IMarkdownPreviewProps) {
-    if (prevProps.file !== this.props.file) {
+    const { path, source, reloadKey, repository } = this.props
+    if (
+      prevProps.path !== path ||
+      prevProps.repository.id !== repository.id ||
+      prevProps.reloadKey !== reloadKey ||
+      sourceKey(prevProps.source) !== sourceKey(source)
+    ) {
       this.load()
     }
   }
 
   private async load() {
     const id = ++this.loadId
-    const { repository, file } = this.props
-    const contents = await getFileContents(repository, file)
-    const lines =
-      file.status.kind === AppFileStatusKind.Deleted
-        ? contents.oldContents
-        : contents.newContents
-    const markdown = await inlineImages(lines.join('\n'), repository, file)
+    const { repository, path, source } = this.props
+    const file = await loadWholeFile(repository, path, source)
+    const markdown = await inlineImages(
+      file.lines.join('\n'),
+      repository,
+      path,
+      source
+    )
 
     if (id === this.loadId) {
       this.setState({ markdown })
@@ -150,9 +173,12 @@ export class MarkdownPreview extends React.Component<
           repository={this.props.repository.gitHubRepository ?? undefined}
           onMarkdownLinkClicked={this.props.onLinkClicked}
           underlineLinks={true}
-          title={`Preview of ${this.props.file.path}`}
+          title={`Preview of ${this.props.path}`}
         />
       </div>
     )
   }
 }
+
+const sourceKey = (source: WholeFileSource) =>
+  source.kind === 'disk' ? 'disk' : `commit:${source.commitish}`

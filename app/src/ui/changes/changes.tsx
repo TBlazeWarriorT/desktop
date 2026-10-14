@@ -15,6 +15,7 @@ import { Emoji } from '../../lib/emoji'
 import {
   MarkdownPreview,
   getMarkdownPreview,
+  getPreviewSource,
   setMarkdownPreview,
 } from '../diff/markdown-preview'
 import {
@@ -199,7 +200,9 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
     return (
       <MarkdownPreview
         repository={this.props.repository}
-        file={this.props.file}
+        path={this.props.file.path}
+        source={getPreviewSource(this.props.file)}
+        reloadKey={this.props.diff}
         emoji={this.props.emoji}
         onLinkClicked={this.onMarkdownLinkClicked}
       />

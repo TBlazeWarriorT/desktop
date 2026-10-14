@@ -86,6 +86,12 @@
     padding: var(--spacing-half) var(--spacing);
     border-bottom: var(--base-border);
     background: var(--box-alt-background-color);
-    @include ellipsis;
+    display: flex;
+    align-items: center;
+
+    .path-text-component {
+      flex: 1;
+      min-width: 0;
+    }
   }
 }
