@@ -118,6 +118,7 @@ import { StashAndSwitchBranch } from './stash-changes/stash-and-switch-branch-di
 import { OverwriteStash } from './stash-changes/overwrite-stashed-changes-dialog'
 import { ConfirmDiscardStashDialog } from './stashing/confirm-discard-stash'
 import { ConfirmCheckoutCommitDialog } from './checkout/confirm-checkout-commit'
+import { SwitchAndPullDialog } from './branches/switch-and-pull-dialog'
 import { CreateTutorialRepositoryDialog } from './no-repositories/create-tutorial-repository-dialog'
 import { ConfirmExitTutorial } from './tutorial'
 import { TutorialStep, isValidTutorialStep } from '../models/tutorial-step'
@@ -2265,6 +2266,18 @@ export class App extends React.Component<IAppProps, IAppState> {
             }
             repository={repository}
             commit={commit}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.SwitchAndPullBranch: {
+        return (
+          <SwitchAndPullDialog
+            key="switch-and-pull-dialog"
+            dispatcher={this.props.dispatcher}
+            repository={popup.repository}
+            branch={popup.branch}
+            message={popup.message}
             onDismissed={onPopupDismissedFn}
           />
         )

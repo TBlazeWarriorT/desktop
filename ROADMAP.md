@@ -10,8 +10,8 @@ notes are in `AGENTS.md`.
        - [x] `↓3 ↑1` next to each branch in the dropdown (behind/ahead of its upstream).
        - [x] Right Click → Pull from origin on any branch: fast-forward, or merge
              (`merge-tree` + `commit-tree`) / rebase (`git replay`) per pull settings,
-             without checkout. Conflicts → message asking to switch and pull.
-       - [ ] One-click "switch and pull" on conflicts instead of a plain message.
+             without checkout. Conflicts → dialog offering to switch and pull.
+       - [x] One-click "switch and pull" on conflicts instead of a plain message.
 2. [ ] **Conflicts A:** find, count, navigate and display conflict markers in any
        uncommitted file (read-only, with syntax highlighting).
 3. [ ] **Named stashes:** list, names, apply/pop/drop, no per-branch overwrite.

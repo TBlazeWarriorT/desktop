@@ -2,6 +2,7 @@ import { Branch } from '../../models/branch'
 import { Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
 import { FetchType } from '../../models/fetch'
+import { PopupType } from '../../models/popup'
 import { updateBranchFromUpstream } from '../../lib/git/update-branch'
 
 /**
@@ -28,18 +29,20 @@ export async function pullBranch(
   const result = await updateBranchFromUpstream(repository, name, upstream)
   await dispatcher.refreshRepository(repository)
 
-  const switchHint = `Switch to "${name}" and use Pull to resolve it the usual way.`
+  const offerSwitch = (reason: string) =>
+    dispatcher.showPopup({
+      type: PopupType.SwitchAndPullBranch,
+      repository,
+      branch,
+      message: `${reason} Switch to "${name}" and pull it the usual way?`,
+    })
   switch (result.kind) {
     case 'conflicts':
-      return dispatcher.postError(
-        new Error(`"${name}" has conflicts with ${upstream}. ${switchHint}`)
-      )
+      return offerSwitch(`"${name}" has conflicts with ${upstream}.`)
     case 'needs-merge':
-      return dispatcher.postError(
-        new Error(
-          `"${name}" and ${upstream} have both changed, and your pull ` +
-            `settings only allow fast-forwards. ${switchHint}`
-        )
+      return offerSwitch(
+        `"${name}" and ${upstream} have both changed, and your pull ` +
+          `settings only allow fast-forwards.`
       )
     case 'checked-out':
       return dispatcher.postError(
