@@ -26,6 +26,8 @@ notes are in `AGENTS.md`.
              still reads them.
 4. [x] **History search** by message, author and SHA.
        - [x] Each result shows the branches that contain it ("main +2", all in the tooltip).
+       - [x] Right Click a result > Show in history: the full list, scrolled to it and
+             selected (disabled for commits outside the current branch).
 5. [x] **File history:** Right Click a file → every commit that changed it
        (`git log --follow`). "Show history" in Changes and in a commit's files; the file
        becomes a chip in the History search (searchable, renames followed), and each

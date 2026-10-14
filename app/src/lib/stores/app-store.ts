@@ -182,6 +182,7 @@ import {
 import { assertNever, fatalError, forceUnwrap } from '../fatal-error'
 
 import { formatCommitMessage } from '../format-commit-message'
+import { countCommitsAbove, isInCurrentHistory } from '../git/commit-position'
 import {
   getAccountForCommitMessageGeneration,
   getAccountForCopilotConflictResolution,
@@ -2023,6 +2024,50 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }))
       this.emitUpdate()
     }
+  }
+
+  /**
+   * Loads History down to `sha` in one go (plus a page of context) and selects
+   * it. Returns its row, or null when it isn't in the current branch.
+   */
+  public async _showCommitInHistory(
+    repository: Repository,
+    sha: string
+  ): Promise<number | null> {
+    if (!(await isInCurrentHistory(repository, sha))) {
+      return null
+    }
+    const { formState } = this.repositoryStateCache.get(repository).compareState
+    if (formState.kind !== HistoryTabMode.History) {
+      await this._executeCompare(repository, { kind: HistoryTabMode.History })
+    }
+
+    const gitStore = this.gitStoreCache.get(repository)
+    let shas = this.repositoryStateCache.get(repository).compareState.commitSHAs
+    // Merged side branches can put it a bit below its count; a page covers it.
+    const wanted = (await countCommitsAbove(repository, sha)) + 100
+    while (!shas.includes(sha) && shas.length < wanted + 1000) {
+      const more = await gitStore.loadCommitBatch(
+        'HEAD',
+        shas.length,
+        Math.max(wanted - shas.length, 100)
+      )
+      if (more === null || more.length === 0) {
+        break
+      }
+      shas = shas.concat(more)
+      this.repositoryStateCache.updateCompareState(repository, () => ({
+        commitSHAs: shas,
+      }))
+    }
+
+    const row = shas.indexOf(sha)
+    if (row === -1) {
+      return null
+    }
+    await this._changeCommitSelection(repository, [sha], true)
+    this.emitUpdate()
+    return row
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */

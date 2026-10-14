@@ -287,6 +287,9 @@ The search box above the History list; the ⇄ button next to it opens the old
 
 Each result shows the branches that contain it (\`main +3\`; hover for all). The same
 title on two SHAs in different branches shows two different chips.
+Right Click a result > Show in history: the search closes and History shows the
+commit selected among its neighbors. With *All branches*, the remote-only pull/*
+commits have it disabled ("not in the current branch").
 
 File history: Right Click \`npc/custom/healer.txt\` (in Changes, or in a commit's file
 list) > Show history. History shows only the commits that changed it, each opening

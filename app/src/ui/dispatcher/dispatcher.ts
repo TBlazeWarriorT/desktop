@@ -245,6 +245,14 @@ export class Dispatcher {
   }
 
   /** Load the next batch of history for the repository. */
+  /** Selects a commit in History, loading it first; null if not in HEAD. */
+  public showCommitInHistory(
+    repository: Repository,
+    sha: string
+  ): Promise<number | null> {
+    return this.appStore._showCommitInHistory(repository, sha)
+  }
+
   public loadNextCommitBatch(repository: Repository): Promise<void> {
     return this.appStore._loadNextCommitBatch(repository)
   }

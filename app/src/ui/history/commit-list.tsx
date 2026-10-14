@@ -31,7 +31,7 @@ import { Avatar } from '../lib/avatar'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 
-const RowHeight = 50
+export const RowHeight = 50
 
 interface ICommitListProps {
   /** The GitHub repository associated with this commit (if found) */
@@ -190,6 +190,9 @@ interface ICommitListProps {
 
   /** Opens the Files tab at a commit. */
   readonly onBrowseFiles?: (sha: string) => void
+  /** Search results: Show in history, for commits in the current branch. */
+  readonly onShowInHistory?: (sha: string) => void
+  readonly isInHistory?: (sha: string) => Promise<boolean>
 
   /** Commits that would conflict with main, and the tooltip explaining it. */
   readonly conflictWarnings?: ReadonlyMap<string, string>
@@ -732,7 +735,7 @@ export class CommitList extends React.Component<
     }
   }
 
-  private onRowContextMenu = (
+  private onRowContextMenu = async (
     row: number,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
@@ -758,6 +761,19 @@ export class CommitList extends React.Component<
       items = this.getContextMenuMultipleCommits(commit)
     } else {
       items = this.getContextMenuForSingleCommit(row, commit)
+      const { onShowInHistory, isInHistory } = this.props
+      if (onShowInHistory !== undefined && isInHistory !== undefined) {
+        const inHistory = await isInHistory(sha)
+        items.push({
+          label: inHistory
+            ? __DARWIN__
+              ? 'Show in History'
+              : 'Show in history'
+            : 'Show in history (not in the current branch)',
+          action: () => onShowInHistory(sha),
+          enabled: inHistory,
+        })
+      }
     }
 
     showContextualMenu(items)

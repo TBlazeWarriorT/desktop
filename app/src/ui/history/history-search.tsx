@@ -111,6 +111,11 @@ export class HistorySearch extends React.Component<
     this.cancel()
   }
 
+  /** Back to the normal history, e.g. to show a result among its neighbors. */
+  public clear() {
+    this.onQueryChanged('')
+  }
+
   public render() {
     const active =
       this.state.query.trim() !== '' || this.props.filePath !== null

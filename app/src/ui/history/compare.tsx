@@ -8,7 +8,8 @@ import {
   ComparisonMode,
   IDisplayHistory,
 } from '../../lib/app-state'
-import { CommitList } from './commit-list'
+import { CommitList, RowHeight } from './commit-list'
+import { isInCurrentHistory } from '../../lib/git/commit-position'
 import { Repository } from '../../models/repository'
 import { Branch } from '../../models/branch'
 import { defaultErrorHandler, Dispatcher } from '../dispatcher'
@@ -97,6 +98,7 @@ export class CompareSidebar extends React.Component<
 > {
   private textbox: TextBox | null = null
   private readonly loadChangedFilesScheduler = new ThrottledScheduler(200)
+  private readonly historySearchRef = React.createRef<HistorySearch>()
   private branchList: BranchList | null = null
   private commitListRef = React.createRef<CommitList>()
   private loadingMoreCommitsPromise: Promise<void> | null = null
@@ -245,6 +247,7 @@ export class CompareSidebar extends React.Component<
       return (
         <div id="compare-view" role="tabpanel" aria-labelledby="history-tab">
           <HistorySearch
+            ref={this.historySearchRef}
             repository={this.props.repository}
             dispatcher={this.props.dispatcher}
             filePath={this.props.historyFilePath}
@@ -283,6 +286,24 @@ export class CompareSidebar extends React.Component<
 
   private onBrowseFiles = (sha: string) => {
     this.props.dispatcher.browseFiles(this.props.repository, sha)
+  }
+
+  private isInHistory = (sha: string) =>
+    isInCurrentHistory(this.props.repository, sha)
+
+  /** Leaves the search for the full history, scrolled to the commit. */
+  private onShowInHistory = async (sha: string) => {
+    const { repository, dispatcher } = this.props
+    this.historySearchRef.current?.clear()
+    if (this.props.historyFilePath !== null) {
+      dispatcher.setHistoryFilePath(repository, null)
+    }
+    const row = await dispatcher.showCommitInHistory(repository, sha)
+    if (row !== null) {
+      // A few commits of context above it.
+      this.props.onCompareListScrolled(Math.max(row - 3, 0) * RowHeight)
+      dispatcher.loadChangedFilesForCurrentSelection(repository)
+    }
   }
 
   private onFilePathCleared = () => {
@@ -426,6 +447,8 @@ export class CompareSidebar extends React.Component<
         branchesRepository={search ? this.props.repository : undefined}
         conflictWarnings={this.state.conflictWarnings}
         onBrowseFiles={this.onBrowseFiles}
+        onShowInHistory={search ? this.onShowInHistory : undefined}
+        isInHistory={search ? this.isInHistory : undefined}
       />
     )
   }
