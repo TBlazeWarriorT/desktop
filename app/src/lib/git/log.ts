@@ -122,7 +122,9 @@ export async function getCommits(
   revisionRange?: string,
   limit?: number,
   skip?: number,
-  additionalArgs: ReadonlyArray<string> = []
+  additionalArgs: ReadonlyArray<string> = [],
+  /** Only commits touching these paths (after `--`). */
+  paths: ReadonlyArray<string> = []
 ): Promise<ReadonlyArray<Commit>> {
   const { formatArgs, parse } = createLogParser({
     sha: '%H', // SHA
@@ -168,7 +170,7 @@ export async function getCommits(
     args.push('--end-of-options', revisionRange)
   }
 
-  args.push('--')
+  args.push('--', ...paths)
   const result = await git(args, repository.path, 'getCommits', {
     successExitCodes: new Set([0, 128]),
     encoding: 'buffer',

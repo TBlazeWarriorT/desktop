@@ -2880,6 +2880,16 @@ export class Dispatcher {
     return this.appStore._createStash(repository, title, files)
   }
 
+  /** Open History filtered to the commits that changed this file. */
+  public showFileHistory(repository: Repository, path: string) {
+    return this.appStore._showFileHistory(repository, path)
+  }
+
+  /** Limit (or stop limiting) the History search to one file. */
+  public setHistoryFilePath(repository: Repository, path: string | null) {
+    return this.appStore._setHistoryFilePath(repository, path)
+  }
+
   /** Make commits found by a history search selectable. */
   public addCommitsToLookup(
     repository: Repository,

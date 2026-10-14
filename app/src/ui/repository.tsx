@@ -380,6 +380,7 @@ export class RepositoryView extends React.Component<
         }
         accounts={this.props.accounts}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
+        historyFilePath={this.props.state.historyFilePath}
       />
     )
   }

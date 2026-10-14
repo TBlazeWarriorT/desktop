@@ -274,6 +274,10 @@ The search box above the History list; the ⇄ button next to it opens the old
 | \`getvariableofinstance\` with *Search code changes* | "Add global functions and the Begi instance", *in code* |
 | \`Raise the heal price\` with *All branches* | the remote-only commits of the pull/* branches |
 
+File history: Right Click \`npc/custom/healer.txt\` (in Changes, or in a commit's file
+list) > Show history. History shows only the commits that changed it, each opening
+on that file; type in the box to search within them; click the file chip to go back.
+
 ## Branches and pulling without switching
 
 Open the branch dropdown: each branch shows ↓behind ↑ahead of \`origin\`.

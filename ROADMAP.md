@@ -25,8 +25,12 @@ notes are in `AGENTS.md`.
              selected files. Names go before Desktop's marker, so the official app
              still reads them.
 4. [ ] **History search** by message, author and SHA.
-5. [ ] **File history:** Right Click a file → every commit that changed it
-       (`git log --follow`).
+5. [x] **File history:** Right Click a file → every commit that changed it
+       (`git log --follow`). "Show history" in Changes and in a commit's files; the file
+       becomes a chip in the History search (searchable, renames followed), and each
+       commit opens on that file.
+       - [ ] Open on the file in commits from before a rename (old name).
+       - [ ] Folder history (a path prefix, no --follow).
 6. [ ] **Conflict warning against main:** on each commit, check whether the branch
        conflicts with main (`git merge-tree --write-tree`, no checkout) and mark
        conflicting commits with an icon.

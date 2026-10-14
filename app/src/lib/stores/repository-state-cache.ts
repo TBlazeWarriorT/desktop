@@ -395,6 +395,7 @@ function getInitialRepositoryState(): IRepositoryState {
       },
     },
     selectedSection: RepositorySectionTab.Changes,
+    historyFilePath: null,
     branchesState: {
       tip: { kind: TipState.Unknown },
       defaultBranch: null,

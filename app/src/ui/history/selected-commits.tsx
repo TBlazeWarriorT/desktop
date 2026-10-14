@@ -18,6 +18,7 @@ import {
   RevealInFileManagerLabel,
   OpenWithDefaultProgramLabel,
   CopyRelativeFilePathLabel,
+  FileHistoryLabel,
 } from '../lib/context-menu'
 import { ThrottledScheduler } from '../lib/throttled-scheduler'
 
@@ -459,6 +460,12 @@ export class SelectedCommits extends React.Component<
       {
         label: CopyRelativeFilePathLabel,
         action: () => writeClipboardText(Path.normalize(file.path)),
+      },
+      { type: 'separator' },
+      {
+        label: FileHistoryLabel,
+        action: () =>
+          this.props.dispatcher.showFileHistory(repository, file.path),
       },
       { type: 'separator' },
     ]

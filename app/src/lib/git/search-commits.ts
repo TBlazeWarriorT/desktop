@@ -3,13 +3,22 @@ import { getCommits } from './log'
 import { Repository } from '../../models/repository'
 import { Commit } from '../../models/commit'
 
-export type CommitMatch = 'sha' | 'title' | 'description' | 'author' | 'code'
+export type CommitMatch =
+  | 'sha'
+  | 'title'
+  | 'description'
+  | 'author'
+  | 'code'
+  /** No query: every commit that touched the file. */
+  | 'path'
 
 export interface ICommitSearchOptions {
   readonly query: string
   /** Also find commits whose added or removed lines contain the query. */
   readonly inCode: boolean
   readonly allBranches: boolean
+  /** Only commits touching this file, following renames. */
+  readonly path?: string | null
 }
 
 interface IStream {
@@ -28,6 +37,8 @@ interface IStream {
 export class CommitSearch {
   private readonly streams: ReadonlyArray<IStream>
   private readonly seen = new Set<string>()
+  /** Every name the file has had, resolved on the first fetch. */
+  private paths: Promise<ReadonlyArray<string>> | null = null
   private shaChecked = false
 
   public constructor(
@@ -45,7 +56,10 @@ export class CommitSearch {
       done: false,
     })
     const streams = new Array<IStream>()
-    if (kinds.includes('text')) {
+    if (q === '') {
+      // Just a file's history: one plain log.
+      streams.push(stream([], 100))
+    } else if (kinds.includes('text')) {
       streams.push(stream(['-i', '-F', `--grep=${q}`], 100))
       streams.push(stream(['-i', '-F', `--author=${q}`], 100))
     }
@@ -54,7 +68,7 @@ export class CommitSearch {
       streams.push(stream(['-i', `-S${q}`], 25))
     }
     this.streams = streams
-    this.shaChecked = !kinds.includes('text')
+    this.shaChecked = !kinds.includes('text') || !!options.path
   }
 
   public get isDone() {
@@ -106,7 +120,9 @@ export class CommitSearch {
   public matchOf(commit: Commit): CommitMatch {
     const q = this.options.query.toLowerCase()
     const has = (text: string) => text.toLowerCase().includes(q)
-    if (commit.sha.startsWith(q)) {
+    if (q === '') {
+      return 'path'
+    } else if (commit.sha.startsWith(q)) {
       return 'sha'
     } else if (has(commit.summary)) {
       return 'title'
@@ -125,11 +141,39 @@ export class CommitSearch {
       allBranches ? undefined : 'HEAD',
       stream.batchSize,
       stream.skip,
-      [...(allBranches ? ['--branches', '--remotes'] : []), ...stream.args]
+      [...(allBranches ? ['--branches', '--remotes'] : []), ...stream.args],
+      await this.getPaths()
     )
     stream.skip += commits.length
     stream.buffer.push(...commits)
     stream.done = commits.length < stream.batchSize
+  }
+
+  /**
+   * --follow loses a rename once --grep/--author/-S filter out the commit
+   * that made it, so look up the old names first and search all of them.
+   */
+  private getPaths() {
+    const { path, allBranches } = this.options
+    if (!path) {
+      return Promise.resolve([])
+    }
+    this.paths ??= git(
+      [
+        'log',
+        '--follow',
+        '--name-only',
+        '--format=',
+        ...(allBranches ? ['--branches', '--remotes'] : ['HEAD']),
+        '--',
+        path,
+      ],
+      this.repository.path,
+      'getFileNames'
+    ).then(r => [
+      ...new Set([path, ...r.stdout.split('\n').filter(l => l !== '')]),
+    ])
+    return this.paths
   }
 
   private async findBySha(): Promise<Commit | null> {

@@ -1,4 +1,7 @@
 const RestrictedFileExtensions = ['.cmd', '.exe', '.bat', '.sh']
+/** Opens History filtered to the file. */
+export const FileHistoryLabel = __DARWIN__ ? 'Show History' : 'Show history'
+
 export const CopyFilePathLabel = __DARWIN__
   ? 'Copy File Path'
   : 'Copy file path'

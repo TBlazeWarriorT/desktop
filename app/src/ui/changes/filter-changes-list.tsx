@@ -25,6 +25,7 @@ import {
   isSafeFileExtension,
   DefaultEditorLabel,
   CopyFilePathLabel,
+  FileHistoryLabel,
   RevealInFileManagerLabel,
   OpenWithDefaultProgramLabel,
   CopyRelativeFilePathLabel,
@@ -721,6 +722,17 @@ export class FilterChangesList extends React.Component<
     const items: IMenuItem[] = [
       this.getDiscardChangesMenuItem(paths),
       this.getStashFilesMenuItem(selectedFiles),
+      { type: 'separator' },
+      {
+        label: FileHistoryLabel,
+        action: () =>
+          this.props.dispatcher.showFileHistory(this.props.repository, path),
+        // A new file has no history yet.
+        enabled:
+          paths.length === 1 &&
+          status.kind !== AppFileStatusKind.New &&
+          status.kind !== AppFileStatusKind.Untracked,
+      },
       { type: 'separator' },
     ]
     if (paths.length === 1) {

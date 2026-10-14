@@ -21,6 +21,26 @@
     }
   }
 
+  // The file of a file history; clicking it shows every commit again.
+  .history-search-bar .history-search-file {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-third);
+    max-width: 40%;
+    color: var(--box-selected-active-text-color);
+    background: var(--box-selected-active-background-color);
+    border-color: var(--box-selected-active-background-color);
+
+    .history-search-file-name {
+      @include ellipsis;
+      min-width: 0;
+    }
+
+    .octicon {
+      flex-shrink: 0;
+    }
+  }
+
   .history-search-options {
     display: flex;
     flex-wrap: wrap;

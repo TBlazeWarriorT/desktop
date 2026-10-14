@@ -2048,9 +2048,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     const noFileSelected = commitSelection.file === null
 
+    // In a file's history, open that file rather than the first one.
+    const { historyFilePath } = this.repositoryStateCache.get(repository)
+    const historyFile = changesetData.files.find(
+      f => f.path === historyFilePath
+    )
     const firstFileOrDefault =
       noFileSelected && changesetData.files.length
-        ? changesetData.files[0]
+        ? historyFile ?? changesetData.files[0]
         : commitSelection.file
 
     this.repositoryStateCache.updateCommitSelection(repository, () => ({
@@ -9069,6 +9074,22 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await this._refreshRepository(repository)
     }
     return created === true
+  }
+
+  /** Opens History filtered to one file. See `Dispatcher`. */
+  public async _showFileHistory(repository: Repository, path: string) {
+    this._setHistoryFilePath(repository, path)
+    await this._executeCompare(repository, { kind: HistoryTabMode.History })
+    this._updateCompareForm(repository, { showBranchList: false })
+    await this._changeRepositorySection(repository, RepositorySectionTab.History)
+  }
+
+  /** See `Dispatcher`. */
+  public _setHistoryFilePath(repository: Repository, path: string | null) {
+    this.repositoryStateCache.update(repository, () => ({
+      historyFilePath: path,
+    }))
+    this.emitUpdate()
   }
 
   /** Adds commits found by a search to the lookup. See `Dispatcher`. */

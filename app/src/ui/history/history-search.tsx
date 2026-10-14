@@ -26,11 +26,15 @@ const matchLabels: Record<CommitMatch, string | undefined> = {
   description: 'in description',
   author: 'by author',
   code: 'in code',
+  path: undefined,
 }
 
 interface IHistorySearchProps {
   readonly repository: Repository
   readonly dispatcher: Dispatcher
+  /** Limits the search to this file (file history), from the app state. */
+  readonly filePath: string | null
+  readonly onFilePathCleared: () => void
   /** Opens the upstream "compare to branch" picker. */
   readonly onCompareClicked: () => void
   /** Renders the results with the History tab's own commit list. */
@@ -83,9 +87,17 @@ export class HistorySearch extends React.Component<
     }
   }
 
+  public componentDidMount() {
+    if (this.props.filePath !== null) {
+      this.scheduleSearch(0)
+    }
+  }
+
   public componentDidUpdate(prevProps: IHistorySearchProps) {
     if (prevProps.repository.id !== this.props.repository.id) {
       this.onQueryChanged('')
+    } else if (prevProps.filePath !== this.props.filePath) {
+      this.scheduleSearch(0)
     }
   }
 
@@ -94,7 +106,8 @@ export class HistorySearch extends React.Component<
   }
 
   public render() {
-    const active = this.state.query.trim() !== ''
+    const active =
+      this.state.query.trim() !== '' || this.props.filePath !== null
     return (
       <>
         {this.renderBar()}
@@ -106,13 +119,28 @@ export class HistorySearch extends React.Component<
 
   private renderBar() {
     const { inCode, allBranches, optionsOpen } = this.state
+    const { filePath } = this.props
     return (
       <div className="compare-form history-search-bar">
+        {filePath !== null && (
+          <Button
+            className="history-search-file"
+            tooltip={`History of ${filePath}. Click to show all commits.`}
+            ariaLabel={`Stop filtering by ${filePath}`}
+            onClick={this.props.onFilePathCleared}
+          >
+            <Octicon symbol={octicons.file} />
+            <span className="history-search-file-name">
+              {filePath.split('/').pop()}
+            </span>
+            <Octicon symbol={octicons.x} />
+          </Button>
+        )}
         <FancyTextBox
           ariaLabel="Search commits"
           symbol={octicons.search}
           displayClearButton={true}
-          placeholder="Search commits…"
+          placeholder={filePath ? 'Search in this file…' : 'Search commits…'}
           value={this.state.query}
           onRef={this.onTextBoxRef}
           onValueChanged={this.onQueryChanged}
@@ -181,6 +209,8 @@ export class HistorySearch extends React.Component<
       <>
         <div className="history-search-status">
           {count}
+          {this.props.filePath !== null &&
+            ` touching ${this.props.filePath.split('/').pop()}`}
           {status && ` · ${status}`}
         </div>
         <div className="compare-commit-list">
@@ -250,7 +280,8 @@ export class HistorySearch extends React.Component<
     this.cancel()
     this.matches = new Map()
     const query = this.state.query.trim()
-    if (query === '') {
+    const path = this.props.filePath
+    if (query === '' && path === null) {
       this.setState({
         commits: [],
         done: false,
@@ -264,12 +295,14 @@ export class HistorySearch extends React.Component<
       query,
       inCode: this.state.inCode,
       allBranches: this.state.allBranches,
+      path,
     }
     const { repository } = this.props
     this.textSearch = new CommitSearch(repository, options, ['text'])
-    this.codeSearch = options.inCode
-      ? new CommitSearch(repository, options, ['code'])
-      : null
+    this.codeSearch =
+      options.inCode && query !== ''
+        ? new CommitSearch(repository, options, ['code'])
+        : null
     // Any older search still running is ignored, so its flags reset too.
     this.setState(
       { commits: [], done: false, searchingText: false, searchingCode: false },

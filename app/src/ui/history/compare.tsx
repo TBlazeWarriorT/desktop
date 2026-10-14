@@ -63,6 +63,8 @@ interface ICompareSidebarProps {
   readonly shasToHighlight: ReadonlyArray<string>
   readonly accounts: ReadonlyArray<Account>
   readonly preferAbsoluteDates: boolean
+  /** The file the History search is limited to, if any. */
+  readonly historyFilePath: string | null
 }
 interface ICompareSidebarState {
   /**
@@ -189,6 +191,8 @@ export class CompareSidebar extends React.Component<
           <HistorySearch
             repository={this.props.repository}
             dispatcher={this.props.dispatcher}
+            filePath={this.props.historyFilePath}
+            onFilePathCleared={this.onFilePathCleared}
             onCompareClicked={this.onCompareClicked}
             renderResults={this.renderSearchResults}
           >
@@ -219,6 +223,10 @@ export class CompareSidebar extends React.Component<
         {showBranchList ? this.renderFilterList() : this.renderCommits()}
       </div>
     )
+  }
+
+  private onFilePathCleared = () => {
+    this.props.dispatcher.setHistoryFilePath(this.props.repository, null)
   }
 
   private onCompareClicked = () => {

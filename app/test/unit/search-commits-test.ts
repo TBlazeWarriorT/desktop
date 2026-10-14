@@ -97,6 +97,42 @@ describe('CommitSearch', () => {
     assert.equal(search.matchOf(commits[0]), 'code')
   })
 
+  it("lists a file's commits, across renames, with or without a query", async t => {
+    const repo = await setup(t)
+    await writeFile(join(repo.path, 'other.txt'), 'x\n')
+    await run(repo, ['add', '.'])
+    await run(repo, ['commit', '-q', '-m', 'Touch another file'])
+    await run(repo, ['mv', 'f.txt', 'renamed.txt'])
+    await run(repo, ['commit', '-q', '-m', 'Rename f'])
+
+    const history = new CommitSearch(
+      repo,
+      { query: '', inCode: false, allBranches: false, path: 'renamed.txt' },
+      ['text']
+    )
+    const all = await history.next(100)
+    assert.equal(all[0].summary, 'Rename f')
+    assert.ok(all.some(c => c.summary === 'Initial'))
+    assert.ok(!all.some(c => c.summary === 'Touch another file'))
+    assert.equal(history.matchOf(all[0]), 'path')
+
+    const healer = new CommitSearch(
+      repo,
+      {
+        query: 'healer',
+        inCode: false,
+        allBranches: false,
+        path: 'renamed.txt',
+      },
+      ['text']
+    )
+    assert.deepStrictEqual(titles(await healer.next(100)), [
+      'Unrelated',
+      'Tweak',
+      'Fix the healer',
+    ])
+  })
+
   it('jumps to a commit by SHA prefix, even on another branch', async t => {
     const repo = await setup(t)
     await run(repo, ['checkout', '-q', '-b', 'side'])

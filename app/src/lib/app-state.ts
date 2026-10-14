@@ -552,6 +552,9 @@ export interface IRepositoryState {
   readonly compareState: ICompareState
   readonly selectedSection: RepositorySectionTab
 
+  /** File the History search is limited to ("file history"), if any. */
+  readonly historyFilePath: string | null
+
   /**
    * The state of the current pull request view in the repository.
    *
