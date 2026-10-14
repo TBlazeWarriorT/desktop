@@ -418,6 +418,11 @@ export function buildDefaultMenuTemplate({
       },
       ...(enableWorktreeSupport() ? [separator] : []),
       {
+        label: __DARWIN__ ? 'Remotes…' : 'Re&motes…',
+        id: 'show-remotes',
+        click: emit('show-remotes'),
+      },
+      {
         label: __DARWIN__ ? 'Repository Settings…' : 'Repository &settings…',
         id: 'show-repository-settings',
         click: emit('show-repository-settings'),

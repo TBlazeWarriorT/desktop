@@ -4,7 +4,9 @@ import { Repository } from '../../models/repository'
 import { getRemotes } from '../../lib/git'
 import { findDefaultRemote } from '../../lib/stores/helpers/find-default-remote'
 import { Dispatcher } from '../dispatcher'
-import { DialogContent } from '../dialog'
+import { Dialog, DialogContent, DialogFooter } from '../dialog'
+import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
+import { PopupType } from '../../models/popup'
 import { TextBox } from '../lib/text-box'
 import { Button } from '../lib/button'
 import { LinkButton } from '../lib/link-button'
@@ -130,7 +132,7 @@ class RemoteRow extends React.Component<IRemoteRowProps> {
 }
 
 /** Every remote of the repository, added, edited and removed on the spot. */
-export class Remotes extends React.Component<IRemotesProps, IRemotesState> {
+class Remotes extends React.Component<IRemotesProps, IRemotesState> {
   public constructor(props: IRemotesProps) {
     super(props)
     this.state = {
@@ -372,5 +374,44 @@ export class Remotes extends React.Component<IRemotesProps, IRemotesState> {
     await this.reload()
     this.setState({ busy: false })
     return ok
+  }
+}
+
+interface IRemotesDialogProps {
+  readonly repository: Repository
+  readonly dispatcher: Dispatcher
+  readonly onDismissed: () => void
+}
+
+/** Repository > Remotes…: changes apply right away, so it only has Close. */
+export class RemotesDialog extends React.Component<IRemotesDialogProps> {
+  public render() {
+    return (
+      <Dialog
+        id="remotes"
+        title="Remotes"
+        onDismissed={this.props.onDismissed}
+        onSubmit={this.props.onDismissed}
+      >
+        <Remotes
+          repository={this.props.repository}
+          dispatcher={this.props.dispatcher}
+          onPublish={this.onPublish}
+        />
+        <DialogFooter>
+          <OkCancelButtonGroup
+            okButtonText="Close"
+            cancelButtonVisible={false}
+          />
+        </DialogFooter>
+      </Dialog>
+    )
+  }
+
+  private onPublish = () => {
+    this.props.dispatcher.showPopup({
+      type: PopupType.PublishRepository,
+      repository: this.props.repository,
+    })
   }
 }

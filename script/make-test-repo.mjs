@@ -308,7 +308,7 @@ The branch dropdown shows the same ⚠ next to \`merge-me-conflict\` and
 
 ## Remotes
 
-Repository settings > Remotes lists \`origin\` (default). Add remote \`upstream\` with
+Repository > Remotes… lists \`origin\` (default). Add remote \`upstream\` with
 Choose folder… > \`.git/test-upstream.git\`: it fetches, and \`upstream/upstream-only\`
 shows up in the branch dropdown. Then rename it, change its URL, fetch it with its own
 button, and remove it (its remote branches go away).

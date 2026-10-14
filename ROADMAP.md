@@ -52,9 +52,11 @@ notes are in `AGENTS.md`.
 9. [ ] **Simple built-in text editor.**
 10. [ ] **Conflicts B:** merge editor (pick one/other/both, edit, reorder lines; pop-out
         later). Builds on 2 and 9.
-11. [x] **Remotes/upstreams:** Repository settings > Remotes lists every remote, with
-        add (URL or local folder, then fetch), edit name/URL, remove and per-remote
-        Fetch (a plain Fetch only covers the default remote and a fork's parent).
+11. [x] **Remotes/upstreams:** Repository > Remotes… lists every remote, with add (URL
+        or local folder, then fetch), edit name/URL, remove and per-remote Fetch (a plain
+        Fetch only covers the default remote and a fork's parent).
+        - [ ] Cherry-pick from a remote branch without checking it out (today, picking it
+              in the dropdown creates a local branch and switches to it).
 12. [ ] **Reword and edit older commits**, not just the last one.
 
 ## rAthena syntax

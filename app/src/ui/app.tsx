@@ -81,6 +81,7 @@ import type { IBYOKProvider } from '../lib/copilot/byok'
 import { getConflictResolutionModelDisplay } from '../lib/copilot/conflict-resolution-model'
 import { OpenWithExternalEditor } from './open-with-external-editor/open-with-external-editor'
 import { RepositorySettings } from './repository-settings'
+import { RemotesDialog } from './repository-settings/remotes'
 import { AppError } from './app-error'
 import { MissingRepository } from './missing-repository'
 import { AddExistingRepository, CreateRepository } from './add-repository'
@@ -520,6 +521,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.showRebaseDialog()
       case 'show-repository-settings':
         return this.showRepositorySettings()
+      case 'show-remotes':
+        return this.showRemotes()
       case 'view-repository-on-github':
         return this.viewRepositoryOnGitHub()
       case 'compare-on-github':
@@ -1340,6 +1343,13 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.props.dispatcher.showRebaseDialog(repository)
   }
 
+  private showRemotes() {
+    const repository = this.getRepository()
+    if (repository instanceof Repository) {
+      this.props.dispatcher.showPopup({ type: PopupType.Remotes, repository })
+    }
+  }
+
   private showRepositorySettings() {
     const repository = this.getRepository()
 
@@ -1865,6 +1875,15 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.Remotes:
+        return (
+          <RemotesDialog
+            key="remotes"
+            repository={popup.repository}
+            dispatcher={this.props.dispatcher}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
       case PopupType.SignIn:
         return (
           <SignIn

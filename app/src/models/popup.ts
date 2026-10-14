@@ -36,6 +36,7 @@ export enum PopupType {
   ConfirmDiscardChanges = 'ConfirmDiscardChanges',
   Preferences = 'Preferences',
   RepositorySettings = 'RepositorySettings',
+  Remotes = 'Remotes',
   AddRepository = 'AddRepository',
   CreateRepository = 'CreateRepository',
   CloneRepository = 'CloneRepository',
@@ -189,6 +190,7 @@ export type PopupDetail =
       repository: Repository
       initialSelectedTab?: RepositorySettingsTab
     }
+  | { type: PopupType.Remotes; repository: Repository }
   | { type: PopupType.AddRepository; path?: string }
   | { type: PopupType.CreateRepository; path?: string }
   | {

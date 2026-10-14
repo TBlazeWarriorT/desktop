@@ -1,10 +1,8 @@
 import * as React from 'react'
 import { TabBar, TabBarType } from '../tab-bar'
-import { Remotes } from './remotes'
 import { GitIgnore } from './git-ignore'
 import { assertNever } from '../../lib/fatal-error'
 import { Dispatcher } from '../dispatcher'
-import { PopupType } from '../../models/popup'
 import {
   Repository,
   getForkContributionTarget,
@@ -39,8 +37,7 @@ interface IRepositorySettingsProps {
 }
 
 export enum RepositorySettingsTab {
-  Remote = 0,
-  IgnoredFiles,
+  IgnoredFiles = 0,
   GitConfig,
   ForkSettings,
 }
@@ -73,7 +70,7 @@ export class RepositorySettings extends React.Component<
 
     this.state = {
       selectedTab:
-        this.props.initialSelectedTab || RepositorySettingsTab.Remote,
+        this.props.initialSelectedTab || RepositorySettingsTab.IgnoredFiles,
       ignoreText: null,
       ignoreTextHasChanged: false,
       disabled: false,
@@ -179,10 +176,6 @@ export class RepositorySettings extends React.Component<
             type={TabBarType.Vertical}
           >
             <span>
-              <Octicon className="icon" symbol={octicons.server} />
-              Remotes
-            </span>
-            <span>
               <Octicon className="icon" symbol={octicons.file} />
               {__DARWIN__ ? 'Ignored Files' : 'Ignored files'}
             </span>
@@ -213,15 +206,6 @@ export class RepositorySettings extends React.Component<
   private renderActiveTab() {
     const tab = this.state.selectedTab
     switch (tab) {
-      case RepositorySettingsTab.Remote: {
-        return (
-          <Remotes
-            repository={this.props.repository}
-            dispatcher={this.props.dispatcher}
-            onPublish={this.onPublish}
-          />
-        )
-      }
       case RepositorySettingsTab.IgnoredFiles: {
         return (
           <GitIgnore
@@ -267,13 +251,6 @@ export class RepositorySettings extends React.Component<
       default:
         return assertNever(tab, `Unknown tab type: ${tab}`)
     }
-  }
-
-  private onPublish = () => {
-    this.props.dispatcher.showPopup({
-      type: PopupType.PublishRepository,
-      repository: this.props.repository,
-    })
   }
 
   private onShowGitIgnoreExamples = () => {

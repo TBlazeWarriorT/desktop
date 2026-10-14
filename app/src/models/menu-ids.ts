@@ -27,6 +27,7 @@ export type MenuIDs =
   | 'show-branches-list'
   | 'open-working-directory'
   | 'show-repository-settings'
+  | 'show-remotes'
   | 'open-external-editor'
   | 'open-in-copilot-app'
   | 'open-with-external-editor'
