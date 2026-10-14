@@ -5,9 +5,11 @@ import { IDiff, DiffType } from '../../models/diff'
 import { Octicon, iconForStatus } from '../octicons'
 import { mapStatus } from '../../lib/status'
 import { DiffOptions } from './diff-options'
-import { Button } from '../lib/button'
 import { isMarkdownFile } from '../../lib/markdown-files'
 import { getConflictMarkerCount } from '../../lib/conflict-markers'
+import { IViewMode, ViewModeSwitcher } from './view-mode-switcher'
+
+type ViewMode = 'conflicts' | 'diff' | 'preview'
 import * as octicons from '../octicons/octicons.generated'
 
 interface IDiffHeaderProps {
@@ -49,8 +51,7 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
       <div className="header">
         <PathLabel path={this.props.path} status={this.props.status} />
 
-        {this.renderConflictToggle()}
-        {this.renderMarkdownToggle()}
+        {this.renderViewModes()}
         {this.renderDiffOptions()}
 
         <Octicon
@@ -62,58 +63,75 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
     )
   }
 
-  private renderMarkdownToggle() {
-    const { markdownPreview, onMarkdownPreviewChanged } = this.props
-    if (
-      onMarkdownPreviewChanged === undefined ||
-      !isMarkdownFile(this.props.path)
-    ) {
+  /** Conflicts / Diff / Preview, whichever apply to this file. */
+  private renderViewModes() {
+    const modes = this.getViewModes()
+    if (modes.length < 2) {
       return null
     }
-
     return (
-      <Button
-        className="view-toggle"
-        size="small"
-        ariaPressed={markdownPreview === true}
-        onClick={this.onMarkdownToggleClick}
-        tooltip={markdownPreview ? 'Show the diff' : 'Show the rendered file'}
-      >
-        <Octicon symbol={markdownPreview ? octicons.code : octicons.eye} />
-        {markdownPreview ? 'Diff' : 'Preview'}
-      </Button>
+      <ViewModeSwitcher
+        modes={modes}
+        selected={this.getViewMode(modes)}
+        onChange={this.onViewModeChanged}
+      />
     )
   }
 
-  private renderConflictToggle() {
-    const { conflictView, onConflictViewChanged, status } = this.props
+  private getViewModes() {
+    const { status, path } = this.props
+    const modes = new Array<IViewMode<ViewMode>>()
     if (
-      onConflictViewChanged === undefined ||
-      getConflictMarkerCount(status) === 0
+      this.props.onConflictViewChanged !== undefined &&
+      getConflictMarkerCount(status) > 0
     ) {
-      return null
+      modes.push({
+        id: 'conflicts',
+        label: 'Conflicts',
+        icon: octicons.alert,
+        tooltip: 'The whole file with its conflicts highlighted',
+      })
     }
-
-    return (
-      <Button
-        className="view-toggle"
-        size="small"
-        ariaPressed={conflictView === true}
-        onClick={this.onConflictToggleClick}
-        tooltip={conflictView ? 'Show the diff' : 'Show the conflicts'}
-      >
-        <Octicon symbol={conflictView ? octicons.diff : octicons.alert} />
-        {conflictView ? 'Diff' : 'Conflicts'}
-      </Button>
-    )
+    modes.push({
+      id: 'diff',
+      label: 'Diff',
+      icon: octicons.diff,
+      tooltip: 'What changed',
+    })
+    if (
+      this.props.onMarkdownPreviewChanged !== undefined &&
+      isMarkdownFile(path)
+    ) {
+      modes.push({
+        id: 'preview',
+        label: 'Preview',
+        icon: octicons.eye,
+        tooltip: 'The rendered file',
+      })
+    }
+    return modes
   }
 
-  private onConflictToggleClick = () => {
-    this.props.onConflictViewChanged?.(this.props.conflictView !== true)
+  /** Same precedence as the content: conflicts, then preview, then diff. */
+  private getViewMode(modes: ReadonlyArray<IViewMode<ViewMode>>): ViewMode {
+    const has = (id: ViewMode) => modes.some(m => m.id === id)
+    if (has('conflicts') && this.props.conflictView) {
+      return 'conflicts'
+    }
+    if (has('preview') && this.props.markdownPreview) {
+      return 'preview'
+    }
+    return 'diff'
   }
 
-  private onMarkdownToggleClick = () => {
-    this.props.onMarkdownPreviewChanged?.(this.props.markdownPreview !== true)
+  private onViewModeChanged = (mode: ViewMode) => {
+    const modes = this.getViewModes()
+    if (modes.some(m => m.id === 'conflicts')) {
+      this.props.onConflictViewChanged?.(mode === 'conflicts')
+    }
+    if (mode !== 'conflicts' && modes.some(m => m.id === 'preview')) {
+      this.props.onMarkdownPreviewChanged?.(mode === 'preview')
+    }
   }
 
   private renderDiffOptions() {
