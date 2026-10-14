@@ -306,6 +306,13 @@ an orange alert (hover: "Conflicts with origin/main if merged: npc/custom/healer
 The branch dropdown shows the same ⚠ next to \`merge-me-conflict\` and
 \`pull/conflict\` (their latest commit), from any branch.
 
+## Remotes
+
+Repository settings > Remotes lists \`origin\` (default). Add remote \`upstream\` with
+Choose folder… > \`.git/test-upstream.git\`: it fetches, and \`upstream/upstream-only\`
+shows up in the branch dropdown. Then rename it, change its URL, fetch it with its own
+button, and remove it (its remote branches go away).
+
 ## Branches and pulling without switching
 
 Open the branch dropdown: each branch shows ↓behind ↑ahead of \`origin\`.
@@ -445,6 +452,12 @@ commit('Change the heal price differently', {
 git('checkout', '-q', 'main')
 commit('Lower the heal price', { 'npc/custom/healer.txt': healer(400) })
 git('push', '-q', 'origin', 'main')
+
+// --- A second remote, left for the Remotes settings to add -------------------
+
+const upstream = join(repo, '.git', 'test-upstream.git')
+execFileSync('git', ['clone', '-q', '--bare', origin, upstream], { env })
+git('push', '-q', upstream, 'main:refs/heads/upstream-only')
 
 // --- Stashes -----------------------------------------------------------------
 

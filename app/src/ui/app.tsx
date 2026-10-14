@@ -1849,7 +1849,6 @@ export class App extends React.Component<IAppProps, IAppState> {
         )
       case PopupType.RepositorySettings: {
         const repository = popup.repository
-        const state = this.props.repositoryStateManager.get(repository)
         const repositoryAccount = getAccountForRepository(
           this.state.accounts,
           repository
@@ -1859,7 +1858,6 @@ export class App extends React.Component<IAppProps, IAppState> {
           <RepositorySettings
             key={`repository-settings-${repository.hash}`}
             initialSelectedTab={popup.initialSelectedTab}
-            remote={state.remote}
             dispatcher={this.props.dispatcher}
             repository={repository}
             repositoryAccount={repositoryAccount}

@@ -115,6 +115,19 @@ export async function removeRemote(
   )
 }
 
+/** Renames a remote, along with its remote-tracking branches and upstreams. */
+export async function renameRemote(
+  repository: Repository,
+  name: string,
+  newName: string
+): Promise<void> {
+  await git(
+    ['remote', 'rename', '--', name, newName],
+    repository.path,
+    'renameRemote'
+  )
+}
+
 /** Changes the URL for the remote that matches the given name  */
 export async function setRemoteURL(
   repository: Repository,

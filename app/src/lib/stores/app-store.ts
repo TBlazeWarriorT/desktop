@@ -190,6 +190,9 @@ import {
 import {
   abortMerge,
   addRemote,
+  removeRemote,
+  renameRemote,
+  setRemoteURL,
   checkoutBranch,
   createCommit,
   getAuthorIdentity,
@@ -598,6 +601,17 @@ export const showChangesFilterKey = 'show-changes-filter'
 const selectedCopilotModelsKey = 'selected-copilot-models'
 const selectedCopilotModelsByAccountKey = 'selected-copilot-models-by-account'
 export const showChangesFilterDefault = true
+
+/** What the Remotes settings ask `_changeRemote` to do. */
+export type RemoteChange =
+  | { readonly kind: 'add'; readonly name: string; readonly url: string }
+  | {
+      readonly kind: 'edit'
+      readonly remote: IRemote
+      readonly name: string
+      readonly url: string
+    }
+  | { readonly kind: 'remove'; readonly name: string }
 
 export class AppStore extends TypedBaseStore<IAppState> {
   private readonly gitStoreCache: GitStoreCache
@@ -7688,6 +7702,47 @@ export class AppStore extends TypedBaseStore<IAppState> {
   ): Promise<void> {
     const gitStore = this.gitStoreCache.get(repository)
     await gitStore.setRemoteURL(name, url)
+  }
+
+  /**
+   * Adds, edits (rename and/or new URL) or removes a remote, and fetches an
+   * added one. Throws on git errors, for the Remotes settings to show inline.
+   */
+  public async _changeRemote(
+    repository: Repository,
+    change: RemoteChange
+  ): Promise<void> {
+    try {
+      if (change.kind === 'add') {
+        await addRemote(repository, change.name, change.url)
+      } else if (change.kind === 'remove') {
+        await removeRemote(repository, change.name)
+      } else {
+        if (change.name !== change.remote.name) {
+          await renameRemote(repository, change.remote.name, change.name)
+        }
+        if (change.url !== change.remote.url) {
+          await setRemoteURL(repository, change.name, change.url)
+        }
+      }
+    } finally {
+      // Renames and removals also move or delete remote-tracking branches.
+      await this.gitStoreCache.get(repository).loadRemotes()
+      await this._refreshRepository(repository)
+    }
+    if (change.kind === 'add') {
+      await this._fetchRemoteByName(repository, change.name)
+    }
+  }
+
+  /** Fetches one remote, which a plain Fetch skips unless it is the default. */
+  public async _fetchRemoteByName(repository: Repository, name: string) {
+    const remote = this.gitStoreCache
+      .get(repository)
+      .remotes.find(r => r.name === name)
+    if (remote !== undefined) {
+      await this._fetchRemote(repository, remote, FetchType.UserInitiatedTask)
+    }
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */

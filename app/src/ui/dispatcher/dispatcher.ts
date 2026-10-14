@@ -50,7 +50,7 @@ import {
 } from '../../lib/repository-matching'
 import { Shell } from '../../lib/shells'
 import { ILaunchStats, StatsStore } from '../../lib/stats'
-import { AppStore } from '../../lib/stores/app-store'
+import { AppStore, RemoteChange } from '../../lib/stores/app-store'
 import type {
   CopilotFeature,
   CopilotModelSelectionsByAccount,
@@ -1591,6 +1591,19 @@ export class Dispatcher {
     url: string
   ): Promise<void> {
     return this.appStore._setRemoteURL(repository, name, url)
+  }
+
+  /** Adds, edits or removes a remote; throws on git errors. */
+  public changeRemote(
+    repository: Repository,
+    change: RemoteChange
+  ): Promise<void> {
+    return this.appStore._changeRemote(repository, change)
+  }
+
+  /** Fetches the named remote, even one a plain Fetch skips. */
+  public fetchRemoteByName(repository: Repository, name: string) {
+    return this.appStore._fetchRemoteByName(repository, name)
   }
 
   /** Open the URL in a browser */

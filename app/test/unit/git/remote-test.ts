@@ -5,6 +5,7 @@ import {
   getRemotes,
   addRemote,
   removeRemote,
+  renameRemote,
   setRemoteURL,
 } from '../../../src/lib/git/remote'
 import {
@@ -167,6 +168,25 @@ describe('git/remote', () => {
     it('silently fails when remote not defined', async t => {
       const repository = await setupEmptyRepository(t)
       await assert.doesNotReject(removeRemote(repository, 'origin'))
+    })
+  })
+
+  describe('renameRemote', () => {
+    it('renames the remote and keeps its url', async t => {
+      const repository = await setupEmptyRepository(t)
+      await addRemote(repository, 'origin', 'https://fakeweb.com/owner/name')
+      await renameRemote(repository, 'origin', 'upstream')
+
+      const remotes = await getRemotes(repository)
+      assert.deepEqual(remotes, [
+        { name: 'upstream', url: 'https://fakeweb.com/owner/name' },
+      ])
+    })
+    it('rejects a name that is taken', async t => {
+      const repository = await setupEmptyRepository(t)
+      await addRemote(repository, 'origin', 'https://fakeweb.com/a')
+      await addRemote(repository, 'upstream', 'https://fakeweb.com/b')
+      await assert.rejects(() => renameRemote(repository, 'origin', 'upstream'))
     })
   })
 

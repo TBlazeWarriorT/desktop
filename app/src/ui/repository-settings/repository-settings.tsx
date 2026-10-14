@@ -1,9 +1,8 @@
 import * as React from 'react'
 import { TabBar, TabBarType } from '../tab-bar'
-import { Remote } from './remote'
+import { Remotes } from './remotes'
 import { GitIgnore } from './git-ignore'
 import { assertNever } from '../../lib/fatal-error'
-import { IRemote } from '../../models/remote'
 import { Dispatcher } from '../dispatcher'
 import { PopupType } from '../../models/popup'
 import {
@@ -12,7 +11,6 @@ import {
   isRepositoryWithForkedGitHubRepository,
 } from '../../models/repository'
 import { Dialog, DialogError, DialogFooter } from '../dialog'
-import { NoRemote } from './no-remote'
 import { readGitIgnoreAtRoot } from '../../lib/git'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { ForkSettings } from './fork-settings'
@@ -35,7 +33,6 @@ import * as octicons from '../octicons/octicons.generated'
 interface IRepositorySettingsProps {
   readonly initialSelectedTab?: RepositorySettingsTab
   readonly dispatcher: Dispatcher
-  readonly remote: IRemote | null
   readonly repository: Repository
   readonly repositoryAccount: Account | null
   readonly onDismissed: () => void
@@ -50,7 +47,6 @@ export enum RepositorySettingsTab {
 
 interface IRepositorySettingsState {
   readonly selectedTab: RepositorySettingsTab
-  readonly remote: IRemote | null
   readonly ignoreText: string | null
   readonly ignoreTextHasChanged: boolean
   readonly disabled: boolean
@@ -78,7 +74,6 @@ export class RepositorySettings extends React.Component<
     this.state = {
       selectedTab:
         this.props.initialSelectedTab || RepositorySettingsTab.Remote,
-      remote: props.remote,
       ignoreText: null,
       ignoreTextHasChanged: false,
       disabled: false,
@@ -185,7 +180,7 @@ export class RepositorySettings extends React.Component<
           >
             <span>
               <Octicon className="icon" symbol={octicons.server} />
-              Remote
+              Remotes
             </span>
             <span>
               <Octicon className="icon" symbol={octicons.file} />
@@ -219,17 +214,13 @@ export class RepositorySettings extends React.Component<
     const tab = this.state.selectedTab
     switch (tab) {
       case RepositorySettingsTab.Remote: {
-        const remote = this.state.remote
-        if (remote) {
-          return (
-            <Remote
-              remote={remote}
-              onRemoteUrlChanged={this.onRemoteUrlChanged}
-            />
-          )
-        } else {
-          return <NoRemote onPublish={this.onPublish} />
-        }
+        return (
+          <Remotes
+            repository={this.props.repository}
+            dispatcher={this.props.dispatcher}
+            onPublish={this.onPublish}
+          />
+        )
       }
       case RepositorySettingsTab.IgnoredFiles: {
         return (
@@ -292,26 +283,6 @@ export class RepositorySettings extends React.Component<
   private onSubmit = async () => {
     this.setState({ disabled: true, errors: undefined })
     const errors = new Array<JSX.Element | string>()
-
-    if (this.state.remote && this.props.remote) {
-      const trimmedUrl = this.state.remote.url.trim()
-
-      if (trimmedUrl !== this.props.remote.url) {
-        try {
-          await this.props.dispatcher.setRemoteURL(
-            this.props.repository,
-            this.props.remote.name,
-            trimmedUrl
-          )
-        } catch (e) {
-          log.error(
-            `RepositorySettings: unable to set remote URL at ${this.props.repository.path}`,
-            e
-          )
-          errors.push(`Failed setting the remote URL: ${e}`)
-        }
-      }
-    }
 
     if (this.state.ignoreTextHasChanged && this.state.ignoreText !== null) {
       try {
@@ -386,17 +357,6 @@ export class RepositorySettings extends React.Component<
     } else {
       this.setState({ disabled: false, errors })
     }
-  }
-
-  private onRemoteUrlChanged = (url: string) => {
-    const remote = this.props.remote
-
-    if (!remote) {
-      return
-    }
-
-    const newRemote = { ...remote, url }
-    this.setState({ remote: newRemote })
   }
 
   private onIgnoreTextChanged = (text: string) => {
