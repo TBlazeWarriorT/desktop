@@ -66,6 +66,39 @@
     background: var(--box-alt-background-color);
     color: var(--text-secondary-color);
   }
+
+  // Branches containing a result (app/src/ui/history/commit-branches.tsx).
+  .commit-branches {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-third);
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 140px;
+    margin-right: var(--spacing-half);
+    padding: 0 var(--spacing-half);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary-color);
+    white-space: nowrap;
+
+    .octicon {
+      flex-shrink: 0;
+      width: 10px;
+    }
+
+    .commit-branches-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .commit-branches-more {
+      flex-shrink: 0;
+      font-weight: var(--font-weight-semibold);
+    }
+  }
 }
 
 // Commit that would conflict with the remote main

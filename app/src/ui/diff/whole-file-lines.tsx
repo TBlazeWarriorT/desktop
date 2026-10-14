@@ -97,6 +97,8 @@ interface IWholeFileLinesProps {
   readonly isPlain?: (index: number) => boolean
   /** Changes whenever rowClassName's answers do, to re-render. */
   readonly decorationKey?: unknown
+  /** Row to show at the top when mounted, e.g. where the editor was. */
+  readonly initialTopRow?: number
 }
 
 /** Every line of a file with line numbers and syntax highlighting, virtualized. */
@@ -145,6 +147,7 @@ export class WholeFileLines extends React.Component<
    * on screen exist, so the copy is filled from `lines` instead.
    */
   private allSelected = false
+  private topRow = 0
   private container: HTMLDivElement | null = null
 
   public constructor(props: IWholeFileLinesProps) {
@@ -155,6 +158,14 @@ export class WholeFileLines extends React.Component<
   public componentDidMount() {
     // Edit > Find (app.tsx); the diff listens for the same event.
     document.addEventListener('find-text', this.onFindText)
+    if (this.props.initialTopRow) {
+      this.scrollToRow(this.props.initialTopRow)
+    }
+  }
+
+  /** The first row on screen, to keep the place elsewhere. */
+  public getTopRow() {
+    return this.topRow
   }
 
   public componentWillUnmount() {
@@ -213,6 +224,7 @@ export class WholeFileLines extends React.Component<
               rowHeight={this.getRowHeight}
               rowRenderer={this.renderRow}
               scrollToAlignment="start"
+              onRowsRendered={this.onRowsRendered}
               // Passed only so the list re-renders when they change.
               lines={lines}
               tokens={tokens}
@@ -315,6 +327,10 @@ export class WholeFileLines extends React.Component<
 
   private getRowHeight = (row: { index: number }) =>
     this.heights.rowHeight(row) ?? RowHeight
+
+  private onRowsRendered = ({ startIndex }: { startIndex: number }) => {
+    this.topRow = startIndex
+  }
 
   private onListRef = (list: List | null) => {
     this.list = list

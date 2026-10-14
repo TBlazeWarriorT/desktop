@@ -23,7 +23,9 @@ import {
   getConflictView,
   setConflictView,
 } from '../diff/conflict-view'
-import { FileView } from '../diff/file-view'
+import { EditableFileView } from '../editor/editable-file-view'
+import { hasDraft } from '../editor/file-editor'
+import { getConflictMarkerCount } from '../../lib/conflict-markers'
 import { getAvailableViewModes, getCurrentViewMode } from '../diff/view-mode'
 
 interface IChangesProps {
@@ -77,20 +79,28 @@ interface IChangesState {
   readonly wholeFile: boolean
 }
 
+/** A file with unsaved edits reopens in the editor (conflicts: their own). */
+const opensInEditor = ({ repository, file }: IChangesProps) =>
+  hasDraft(repository, file.path) && getConflictMarkerCount(file.status) === 0
+
 export class Changes extends React.Component<IChangesProps, IChangesState> {
   public constructor(props: IChangesProps) {
     super(props)
     this.state = {
       markdownPreview: getMarkdownPreview(),
       conflictView: getConflictView(),
-      wholeFile: false,
+      wholeFile: opensInEditor(props),
     }
   }
 
   public componentDidUpdate(prevProps: IChangesProps) {
-    // File is picked per file; another file opens in Diff (or Preview).
-    if (prevProps.file.path !== this.props.file.path && this.state.wholeFile) {
-      this.setState({ wholeFile: false })
+    // File is picked per file; another file opens in Diff (or Preview),
+    // unless it has unsaved edits.
+    if (prevProps.file.path !== this.props.file.path) {
+      const wholeFile = opensInEditor(this.props)
+      if (wholeFile !== this.state.wholeFile) {
+        this.setState({ wholeFile })
+      }
     }
   }
 
@@ -182,10 +192,11 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
         return this.renderMarkdownPreview()
       case 'file':
         return (
-          <FileView
+          <EditableFileView
+            key={file.path}
             repository={repository}
+            dispatcher={this.props.dispatcher}
             path={file.path}
-            source={{ kind: 'disk' }}
             reloadKey={diff}
           />
         )

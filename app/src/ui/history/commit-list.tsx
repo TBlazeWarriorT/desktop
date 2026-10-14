@@ -1,6 +1,7 @@
 import * as React from 'react'
 import memoize from 'memoize-one'
 import { GitHubRepository } from '../../models/github-repository'
+import { Repository } from '../../models/repository'
 import { Commit, CommitOneLine } from '../../models/commit'
 import { CommitListItem } from './commit-list-item'
 import { KeyboardInsertionData, List } from '../lib/list'
@@ -184,6 +185,8 @@ interface ICommitListProps {
 
   /** Search results: where the query matched, shown next to each commit. */
   readonly searchMatches?: ReadonlyMap<string, string>
+  /** Set for search results: each row shows the branches containing it. */
+  readonly branchesRepository?: Repository
 
   /** Opens the Files tab at a commit. */
   readonly onBrowseFiles?: (sha: string) => void
@@ -321,6 +324,7 @@ export class CommitList extends React.Component<
         accounts={this.props.accounts}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
         searchMatch={this.props.searchMatches?.get(commit.sha)}
+        branchesRepository={this.props.branchesRepository}
         conflictWarning={this.props.conflictWarnings?.get(commit.sha)}
       />
     )

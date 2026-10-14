@@ -7,6 +7,7 @@
 import * as React from 'react'
 import { Commit } from '../../models/commit'
 import { GitHubRepository } from '../../models/github-repository'
+import { Repository } from '../../models/repository'
 import { IAvatarUser, getAvatarUsersForCommit } from '../../models/avatar'
 import { RichText } from '../lib/rich-text'
 import { RelativeTime } from '../relative-time'
@@ -27,6 +28,7 @@ import { Emoji } from '../../lib/emoji'
 import { enableAccessibleListToolTips } from '../../lib/feature-flag'
 import { TooltippedContent } from '../lib/tooltipped-content'
 import { formatDate } from '../../lib/format-date'
+import { CommitBranches } from './commit-branches'
 
 interface ICommitProps {
   readonly gitHubRepository: GitHubRepository | null
@@ -52,6 +54,8 @@ interface ICommitProps {
   readonly preferAbsoluteDates: boolean
   /** Where a history search matched, when not in the title. */
   readonly searchMatch?: string
+  /** Set in search results: shows the branches that contain the commit. */
+  readonly branchesRepository?: Repository
   /** Set when merging this commit into main would conflict: the tooltip. */
   readonly conflictWarning?: string
 }
@@ -184,11 +188,23 @@ export class CommitListItem extends React.PureComponent<
   private renderCommitIndicators() {
     const tagIndicator = renderCommitListItemTags(this.props.commit.tags)
     const unpushedIndicator = this.renderUnpushedIndicator()
-    const { searchMatch, conflictWarning } = this.props
+    const { searchMatch, conflictWarning, branchesRepository } = this.props
 
-    if (tagIndicator || unpushedIndicator || searchMatch || conflictWarning) {
+    if (
+      tagIndicator ||
+      unpushedIndicator ||
+      searchMatch ||
+      conflictWarning ||
+      branchesRepository
+    ) {
       return (
         <div className="commit-indicators">
+          {branchesRepository && (
+            <CommitBranches
+              repository={branchesRepository}
+              sha={this.props.commit.sha}
+            />
+          )}
           {searchMatch && (
             <span className="commit-search-match">{searchMatch}</span>
           )}

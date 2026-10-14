@@ -12,6 +12,9 @@ import { WholeFileSource } from '../diff/whole-file-lines'
 import { viewModeInfo } from '../diff/diff-header'
 import { ViewModeSwitcher } from '../diff/view-mode-switcher'
 import { PathText } from '../lib/path-text'
+import { Dispatcher } from '../dispatcher'
+import { EditableFileView } from '../editor/editable-file-view'
+import { hasDraft } from '../editor/file-editor'
 
 type FilesViewMode = 'file' | 'preview'
 const filesViewModes = (['file', 'preview'] as const).map(id => ({
@@ -26,6 +29,7 @@ interface IFilesContentProps {
   /** Reloads a working-directory file when this changes. */
   readonly reloadKey: unknown
   readonly emoji: Map<string, Emoji>
+  readonly dispatcher: Dispatcher
   readonly onLinkClicked: (url: string) => void
 }
 
@@ -57,8 +61,10 @@ export class FilesContent extends React.Component<
       commitish === null ? { kind: 'disk' } : { kind: 'commit', commitish }
     const fileReloadKey = commitish === null ? reloadKey : undefined
     const markdown = isMarkdownFile(path)
+    // Unsaved edits show up even where Preview would be picked.
+    const editing = commitish === null && hasDraft(repository, path)
     const mode: FilesViewMode =
-      markdown && this.state.markdownPreview ? 'preview' : 'file'
+      markdown && this.state.markdownPreview && !editing ? 'preview' : 'file'
 
     return (
       <div className="files-content">
@@ -80,6 +86,14 @@ export class FilesContent extends React.Component<
             reloadKey={fileReloadKey}
             emoji={this.props.emoji}
             onLinkClicked={this.props.onLinkClicked}
+          />
+        ) : commitish === null ? (
+          <EditableFileView
+            key={path}
+            repository={repository}
+            dispatcher={this.props.dispatcher}
+            path={path}
+            reloadKey={fileReloadKey}
           />
         ) : (
           <FileView

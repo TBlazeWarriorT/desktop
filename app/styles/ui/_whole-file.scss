@@ -57,8 +57,10 @@
   }
 }
 
-// Ctrl+F in a whole file, styled like the diff's (_side-by-side-diff.scss).
-.whole-file-lines {
+// Ctrl+F in a whole file or the editor, styled like the diff's
+// (_side-by-side-diff.scss).
+.whole-file-lines,
+.code-editor {
   .diff-search {
     position: absolute;
     top: 0;

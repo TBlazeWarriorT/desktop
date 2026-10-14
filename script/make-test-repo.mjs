@@ -285,6 +285,9 @@ The search box above the History list; the ⇄ button next to it opens the old
 | \`getvariableofinstance\` with *Search code changes* | "Add global functions and the Begi instance", *in code* |
 | \`Raise the heal price\` with *All branches* | the remote-only commits of the pull/* branches |
 
+Each result shows the branches that contain it (\`main +3\`; hover for all). The same
+title on two SHAs in different branches shows two different chips.
+
 File history: Right Click \`npc/custom/healer.txt\` (in Changes, or in a commit's file
 list) > Show history. History shows only the commits that changed it, each opening
 on that file; type in the box to search within them; click the file chip to go back.
@@ -300,6 +303,10 @@ on that file; type in the box to search within them; click the file chip to go b
 - Right Click a file in the tree: Show in Explorer, Open in editor, Copy path,
   Show history, View on GitHub. At an old commit the open ones say
   "(current version)". On a folder, Show history lists the commits under it.
+- Edit: File mode in Changes, or a file in the Files tab (working directory only),
+  has an Edit button. Change \`npc/custom/healer.txt\` and switch files: coming back
+  reopens the editor with the edits. Save (or Ctrl+S) keeps its line endings; the
+  diff updates. Discard throws the edits away. At a commit there is no Edit.
 
 ## Conflict warning against main
 

@@ -9,6 +9,7 @@ import {
   getConflictsWithMain,
 } from '../../lib/git/main-conflicts'
 import { remoteTip } from './branch-sync-indicator'
+import { createConcurrencyLimit } from '../../lib/concurrency-limit'
 
 /** The remote main per repository, looked up again after a while. */
 const mainRefs = new Map<string, { at: number; ref: Promise<string | null> }>()
@@ -25,22 +26,7 @@ function getMainRef(repository: Repository) {
 }
 
 // A dropdown full of branches shouldn't start a git process for each at once.
-const MaxConcurrent = 2
-let running = 0
-const waiting = new Array<() => void>()
-
-async function throttled<T>(task: () => Promise<T>): Promise<T> {
-  if (running >= MaxConcurrent) {
-    await new Promise<void>(resolve => waiting.push(resolve))
-  }
-  running++
-  try {
-    return await task()
-  } finally {
-    running--
-    waiting.shift()?.()
-  }
-}
+const throttled = createConcurrencyLimit(2)
 
 interface IBranchConflictIndicatorProps {
   readonly repository: Repository

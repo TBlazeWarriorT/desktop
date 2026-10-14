@@ -680,6 +680,7 @@ export class RepositoryView extends React.Component<
           path={state.filesSelectedPath}
           reloadKey={state.changesState.workingDirectory}
           emoji={this.props.emoji}
+          dispatcher={this.props.dispatcher}
           onLinkClicked={this.onFilesLinkClicked}
         />
       )

@@ -423,6 +423,7 @@ export class CompareSidebar extends React.Component<
         accounts={this.props.accounts}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
         searchMatches={search?.searchMatches}
+        branchesRepository={search ? this.props.repository : undefined}
         conflictWarnings={this.state.conflictWarnings}
         onBrowseFiles={this.onBrowseFiles}
       />

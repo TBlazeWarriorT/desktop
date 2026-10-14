@@ -25,6 +25,7 @@ notes are in `AGENTS.md`.
              selected files. Names go before Desktop's marker, so the official app
              still reads them.
 4. [x] **History search** by message, author and SHA.
+       - [x] Each result shows the branches that contain it ("main +2", all in the tooltip).
 5. [x] **File history:** Right Click a file → every commit that changed it
        (`git log --follow`). "Show history" in Changes and in a commit's files; the file
        becomes a chip in the History search (searchable, renames followed), and each
@@ -50,8 +51,10 @@ notes are in `AGENTS.md`.
        - [x] Same preview in the viewer from 7 (File/Preview in the Files tab header).
        - [ ] Relative links between `.md` files (only https links open today, in the browser).
        - [ ] Ctrl+F in the Markdown preview (it's an iframe; File mode has Ctrl+F meanwhile).
-9. [ ] **Simple built-in text editor.** The editor exists since 10 (`CodeEditor`); it
-       needs an Edit button in File mode and the Files tab.
+9. [x] **Simple built-in text editor.** Edit in File mode (Changes) and in the Files
+       tab, working directory only (`ui/editor/file-editor.tsx`, shared with 10): Save
+       or Discard closes it, Ctrl+S saves and stays, line endings are kept, and unsaved
+       edits reopen when coming back to the file (until the app closes).
 10. [x] **Conflicts B:** merge editor. Conflicts > Edit: each block gets Current /
         Incoming / Both / Both, incoming first, and the file is editable (CodeMirror 6,
         `ui/editor/code-editor.tsx`, highlighted by our worker). Ctrl+S keeps the line

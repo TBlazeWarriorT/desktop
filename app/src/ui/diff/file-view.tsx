@@ -16,6 +16,8 @@ interface IFileViewProps {
   readonly source: WholeFileSource
   /** Reloads when this changes, e.g. the diff the app reloaded. */
   readonly reloadKey?: unknown
+  /** See WholeFileLines.initialTopRow. */
+  readonly initialTopRow?: number
 }
 
 interface IFileViewState {
@@ -26,6 +28,7 @@ interface IFileViewState {
 /** A file in full, read-only, with syntax highlighting and line numbers. */
 export class FileView extends React.Component<IFileViewProps, IFileViewState> {
   private loadId = 0
+  private readonly linesRef = React.createRef<WholeFileLines>()
   /** The shown lines got their tokens; a reload of the same text can stop. */
   private highlighted = false
 
@@ -36,6 +39,11 @@ export class FileView extends React.Component<IFileViewProps, IFileViewState> {
 
   public componentDidMount() {
     this.load(false)
+  }
+
+  /** The first line on screen, to keep the place elsewhere. */
+  public getTopRow() {
+    return this.linesRef.current?.getTopRow() ?? 0
   }
 
   public componentDidUpdate(prevProps: IFileViewProps) {
@@ -98,6 +106,8 @@ export class FileView extends React.Component<IFileViewProps, IFileViewState> {
             <WholeFileLines
               // A new file starts at the top, not at the last one's scroll.
               key={`${this.props.path}|${sourceKey(this.props.source)}`}
+              ref={this.linesRef}
+              initialTopRow={this.props.initialTopRow}
               lines={file.lines}
               tokens={tokens}
             />

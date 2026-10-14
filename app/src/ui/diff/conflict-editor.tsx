@@ -1,6 +1,4 @@
 import * as React from 'react'
-import * as Path from 'path'
-import { readFile, writeFile } from 'fs/promises'
 import { Range, StateField, Text } from '@codemirror/state'
 import {
   Decoration,
@@ -16,21 +14,10 @@ import {
   getConflictLineKinds,
 } from '../../lib/conflict-markers'
 import { ConflictChoice, resolveConflict } from '../../lib/conflict-resolution'
-import { CodeEditor } from '../editor/code-editor'
+import { FileEditor } from '../editor/file-editor'
 import { Button } from '../lib/button'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
-
-/** Larger files stay read-only, like the 1 MB the viewers load. */
-const MaxEditableBytes = 1024 * 1024
-
-/** Unsaved edits by repository and path; they outlive switching files. */
-const drafts = new Map<string, string>()
-const draftKey = (repository: Repository, path: string) =>
-  `${repository.id}:${path}`
-
-export const hasConflictDraft = (repository: Repository, path: string) =>
-  drafts.has(draftKey(repository, path))
 
 const choices: ReadonlyArray<[ConflictChoice, string]> = [
   ['current', 'Current'],
@@ -144,24 +131,10 @@ interface IConflictEditorProps {
   readonly repository: Repository
   readonly dispatcher: Dispatcher
   readonly path: string
-  /** Back to the read-only view (after Save, Discard or Close). */
-  readonly onClose: () => void
-}
-
-interface ILoadedFile {
-  /** As on disk, with `\n` line breaks. */
-  readonly diskText: string
-  /** What the file uses, restored on save. */
-  readonly eol: '\n' | '\r\n'
-  /** What the editor starts from: the draft, else the file. */
-  readonly initialText: string
-}
-
-interface IConflictEditorState {
-  readonly file: ILoadedFile | null
-  readonly error: string | null
-  readonly text: string
-  readonly saving: boolean
+  /** 0-based line to show at the top when opened. */
+  readonly initialTopLine?: number
+  /** Back to the read-only view (after Save, Discard or Close), at this line. */
+  readonly onClose: (topLine: number | null) => void
 }
 
 /**
@@ -169,99 +142,38 @@ interface IConflictEditorState {
  * buttons, and anything can be edited by hand. Saving a file without
  * markers is what marks it resolved.
  */
-export class ConflictEditor extends React.Component<
-  IConflictEditorProps,
-  IConflictEditorState
-> {
-  private view: EditorView | null = null
-
-  public constructor(props: IConflictEditorProps) {
-    super(props)
-    this.state = {
-      file: null,
-      error: null,
-      text: '',
-      saving: false,
-    }
-  }
-
-  public componentDidMount() {
-    this.load()
-  }
-
-  private get fullPath() {
-    return Path.join(this.props.repository.path, this.props.path)
-  }
-
-  private get key() {
-    return draftKey(this.props.repository, this.props.path)
-  }
-
-  private async load() {
-    let buffer: Buffer
-    try {
-      buffer = await readFile(this.fullPath)
-    } catch (e) {
-      this.setState({ error: `Could not read the file: ${e}` })
-      return
-    }
-    if (buffer.length > MaxEditableBytes) {
-      this.setState({ error: 'Files over 1 MB can only be viewed.' })
-      return
-    }
-    if (buffer.subarray(0, 8000).includes(0)) {
-      this.setState({ error: 'Binary files cannot be edited.' })
-      return
-    }
-    const raw = buffer.toString('utf8')
-    const diskText = raw.replace(/\r\n/g, '\n')
-    const initialText = drafts.get(this.key) ?? diskText
-    this.setState({
-      file: {
-        diskText,
-        eol: raw.includes('\r\n') ? '\r\n' : '\n',
-        initialText,
-      },
-      text: initialText,
-    })
-  }
+export class ConflictEditor extends React.Component<IConflictEditorProps> {
+  private getView: () => EditorView | null = () => null
 
   public render() {
-    const { file, error } = this.state
     return (
-      <div className="conflict-editor">
-        {this.renderToolbar()}
-        {error !== null ? (
-          <div className="conflict-editor-message">{error}</div>
-        ) : file === null ? null : (
-          <CodeEditor
-            repository={this.props.repository}
-            path={this.props.path}
-            text={file.initialText}
-            extensions={conflictField}
-            onChange={this.onChange}
-            onSave={this.onSave}
-            onViewReady={this.onViewReady}
-          />
-        )}
-      </div>
+      <FileEditor
+        repository={this.props.repository}
+        dispatcher={this.props.dispatcher}
+        path={this.props.path}
+        extensions={conflictField}
+        renderStatus={this.renderStatus}
+        initialTopLine={this.props.initialTopLine}
+        onClose={this.props.onClose}
+      />
     )
   }
 
-  private renderToolbar() {
-    const { file, text, saving } = this.state
-    const left = file === null ? 0 : findConflicts(text.split('\n')).length
-    const dirty = file !== null && text !== file.diskText
+  private renderStatus = (
+    text: string,
+    dirty: boolean,
+    getView: () => EditorView | null
+  ) => {
+    this.getView = getView
+    const left = findConflicts(text.split('\n')).length
     return (
-      <div className="conflict-view-toolbar">
-        <span className="conflict-view-count">
-          {file === null
-            ? 'Editing'
-            : left === 0
-            ? dirty
-              ? 'No conflicts left: save to mark the file resolved'
-              : 'No conflicts left'
-            : `${left} conflict${left === 1 ? '' : 's'} left`}
+      <>
+        <span className="file-editor-status">
+          {left > 0
+            ? `${left} conflict${left === 1 ? '' : 's'} left`
+            : dirty
+            ? 'No conflicts left: save to mark the file resolved'
+            : 'No conflicts left'}
         </span>
         <Button
           onClick={this.onPrevious}
@@ -279,71 +191,8 @@ export class ConflictEditor extends React.Component<
         >
           <Octicon symbol={octicons.arrowDown} />
         </Button>
-        <span className="conflict-editor-spacer" />
-        {dirty ? (
-          <>
-            <Button onClick={this.onDiscard} disabled={saving}>
-              Discard
-            </Button>
-            <Button onClick={this.onSaveAndClose} disabled={saving}>
-              Save
-            </Button>
-          </>
-        ) : (
-          <Button onClick={this.props.onClose}>Close</Button>
-        )}
-      </div>
+      </>
     )
-  }
-
-  private onViewReady = (view: EditorView | null) => {
-    this.view = view
-  }
-
-  private onChange = (text: string) => {
-    if (this.state.file !== null && text !== this.state.file.diskText) {
-      drafts.set(this.key, text)
-    } else {
-      drafts.delete(this.key)
-    }
-    this.setState({ text })
-  }
-
-  /** Ctrl+S: saves and keeps editing. */
-  private onSave = () => {
-    this.save()
-  }
-
-  private onSaveAndClose = async () => {
-    if (await this.save()) {
-      this.props.onClose()
-    }
-  }
-
-  private async save(): Promise<boolean> {
-    const { file, text, saving } = this.state
-    if (file === null || saving || text === file.diskText) {
-      return false
-    }
-    this.setState({ saving: true })
-    try {
-      await writeFile(this.fullPath, text.replace(/\n/g, file.eol))
-      drafts.delete(this.key)
-      this.setState({ file: { ...file, diskText: text } })
-      // The conflict marker count drives "resolved" in Changes.
-      await this.props.dispatcher.refreshRepository(this.props.repository)
-      this.setState({ saving: false })
-      return true
-    } catch (e) {
-      this.setState({ saving: false, error: `Could not save the file: ${e}` })
-      return false
-    }
-  }
-
-  /** Throws the edits away and goes back to the read-only view. */
-  private onDiscard = () => {
-    drafts.delete(this.key)
-    this.props.onClose()
   }
 
   private onPrevious = () => this.goToConflict(-1)
@@ -351,7 +200,7 @@ export class ConflictEditor extends React.Component<
 
   /** The next or previous block from the cursor, wrapping around. */
   private goToConflict(direction: 1 | -1) {
-    const view = this.view
+    const view = this.getView()
     if (view === null) {
       return
     }

@@ -24,11 +24,16 @@ import {
   selectAll,
 } from '@codemirror/commands'
 import {
+  SearchQuery,
+  closeSearchPanel,
+  findNext,
+  findPrevious,
   highlightSelectionMatches,
   openSearchPanel,
   search,
-  searchKeymap,
+  setSearchQuery,
 } from '@codemirror/search'
+import { DiffSearchInput } from '../diff/diff-search-input'
 import { Repository } from '../../models/repository'
 import { IToken, ITokens } from '../../lib/highlighter/types'
 import { highlightWholeFile } from '../diff/whole-file-lines'
@@ -113,12 +118,49 @@ interface ICodeEditorProps {
   /** Ctrl+S. */
   readonly onSave: () => void
   readonly onViewReady?: (view: EditorView | null) => void
+  /** 0-based line to show at the top when opened, e.g. where the viewer was. */
+  readonly initialTopLine?: number
+}
+
+interface ICodeEditorState {
+  readonly searching: boolean
+  /** The selected hit and the total, after a search. */
+  readonly hits: { readonly current: number; readonly total: number } | null
+}
+
+/**
+ * CodeMirror only highlights matches while its search panel is open, so it
+ * gets an empty one; the visible box is the same as the viewers'.
+ */
+const hiddenSearchPanel = () => {
+  const dom = document.createElement('div')
+  dom.style.display = 'none'
+  return { dom, top: true }
 }
 
 /** An editable file with the app's syntax highlighting (CodeMirror 6). */
-export class CodeEditor extends React.Component<ICodeEditorProps> {
+export class CodeEditor extends React.Component<
+  ICodeEditorProps,
+  ICodeEditorState
+> {
   private view: EditorView | null = null
   private highlightTimer: number | null = null
+
+  public constructor(props: ICodeEditorProps) {
+    super(props)
+    this.state = { searching: false, hits: null }
+  }
+
+  /** 0-based line at the top of the editor, to keep the place elsewhere. */
+  public getTopLine(): number | null {
+    const view = this.view
+    if (view === null) {
+      return null
+    }
+    const top = view.scrollDOM.getBoundingClientRect().top
+    const block = view.lineBlockAtHeight(top - view.documentTop)
+    return view.state.doc.lineAt(block.from).number - 1
+  }
 
   public componentDidUpdate(prevProps: ICodeEditorProps) {
     const { view } = this
@@ -140,7 +182,25 @@ export class CodeEditor extends React.Component<ICodeEditorProps> {
   }
 
   public render() {
-    return <div className="code-editor cm-s-default" ref={this.onRef} />
+    const { searching, hits } = this.state
+    return (
+      <div className="code-editor cm-s-default">
+        <div className="code-editor-view" ref={this.onRef} />
+        {searching && (
+          <DiffSearchInput
+            onSearch={this.onSearch}
+            onClose={this.onSearchClose}
+          />
+        )}
+        {hits !== null && (
+          <div className="whole-file-search-count">
+            {hits.total === 0
+              ? 'No results'
+              : `${hits.current} of ${hits.total}`}
+          </div>
+        )}
+      </div>
+    )
   }
 
   private onRef = (parent: HTMLDivElement | null) => {
@@ -154,6 +214,15 @@ export class CodeEditor extends React.Component<ICodeEditorProps> {
     this.view.dom.addEventListener('select-all', this.onSelectAll)
     this.props.onViewReady?.(this.view)
     this.scheduleHighlight(0)
+
+    const line = this.props.initialTopLine ?? 0
+    if (line > 0 && line < this.view.state.doc.lines) {
+      const pos = this.view.state.doc.line(line + 1).from
+      this.view.dispatch({
+        selection: { anchor: pos },
+        effects: EditorView.scrollIntoView(pos, { y: 'start' }),
+      })
+    }
   }
 
   private createState() {
@@ -165,13 +234,12 @@ export class CodeEditor extends React.Component<ICodeEditorProps> {
         drawSelection(),
         highlightActiveLine(),
         highlightSelectionMatches(),
-        search({ top: true }),
+        search({ top: true, createPanel: hiddenSearchPanel }),
         keymap.of([
           { key: 'Mod-s', run: this.save, preventDefault: true },
           indentWithTab,
           ...defaultKeymap,
           ...historyKeymap,
-          ...searchKeymap,
         ]),
         tokensField,
         theme,
@@ -193,9 +261,48 @@ export class CodeEditor extends React.Component<ICodeEditorProps> {
 
   private onFindText = (event: Event) => {
     event.preventDefault()
-    if (this.view !== null) {
-      openSearchPanel(this.view)
+    this.setState({ searching: true })
+  }
+
+  /** Enter: next hit (Shift: previous); a new query starts from the cursor. */
+  private onSearch = (query: string, direction: 'next' | 'previous') => {
+    const view = this.view
+    if (view === null) {
+      return
     }
+    if (query.trim() === '') {
+      closeSearchPanel(view)
+      this.setState({ hits: null })
+      return
+    }
+    const searchQuery = new SearchQuery({ search: query })
+    view.dispatch({ effects: setSearchQuery.of(searchQuery) })
+    openSearchPanel(view)
+    if (direction === 'next') {
+      findNext(view)
+    } else {
+      findPrevious(view)
+    }
+
+    let total = 0
+    let current = 0
+    const selected = view.state.selection.main.from
+    const cursor = searchQuery.getCursor(view.state)
+    for (let hit = cursor.next(); !hit.done; hit = cursor.next()) {
+      total++
+      if (hit.value.from === selected) {
+        current = total
+      }
+    }
+    this.setState({ hits: { current, total } })
+  }
+
+  private onSearchClose = () => {
+    if (this.view !== null) {
+      closeSearchPanel(this.view)
+      this.view.focus()
+    }
+    this.setState({ searching: false, hits: null })
   }
 
   private onSelectAll = (event: Event) => {

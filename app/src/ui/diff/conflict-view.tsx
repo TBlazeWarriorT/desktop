@@ -21,7 +21,8 @@ import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { getBoolean, setBoolean } from '../../lib/local-storage'
 import { Dispatcher } from '../dispatcher'
-import { ConflictEditor, hasConflictDraft } from './conflict-editor'
+import { ConflictEditor } from './conflict-editor'
+import { hasDraft } from '../editor/file-editor'
 
 const ConflictViewKey = 'conflict-view'
 
@@ -46,6 +47,8 @@ interface IConflictViewState {
   readonly current: number
   /** The merge editor instead of the read-only view. */
   readonly editing: boolean
+  /** The line on top, carried between the viewer and the editor. */
+  readonly topLine: number
 }
 
 /**
@@ -69,7 +72,8 @@ export class ConflictView extends React.Component<
       regions: [],
       kinds: [],
       current: 0,
-      editing: hasConflictDraft(props.repository, props.file.path),
+      editing: hasDraft(props.repository, props.file.path),
+      topLine: 0,
     }
   }
 
@@ -81,7 +85,7 @@ export class ConflictView extends React.Component<
     if (prevProps.file.path !== this.props.file.path) {
       // Files with unsaved edits reopen in the editor.
       const { repository, file } = this.props
-      this.setState({ editing: hasConflictDraft(repository, file.path) })
+      this.setState({ editing: hasDraft(repository, file.path), topLine: 0 })
       this.load(true)
     } else if (prevProps.diff !== this.props.diff) {
       this.load(false)
@@ -136,6 +140,7 @@ export class ConflictView extends React.Component<
             repository={this.props.repository}
             dispatcher={this.props.dispatcher}
             path={this.props.file.path}
+            initialTopLine={this.state.topLine}
             onClose={this.onStopEditing}
           />
         </div>
@@ -177,6 +182,7 @@ export class ConflictView extends React.Component<
           // A new file starts at the top, not at the last one's scroll.
           key={this.props.file.path}
           ref={this.linesRef}
+          initialTopRow={this.state.topLine}
           lines={lines}
           tokens={this.state.tokens}
           rowClassName={this.rowClassName}
@@ -211,11 +217,12 @@ export class ConflictView extends React.Component<
   private isMarker = (index: number) => this.state.kinds[index] === 'marker'
 
   private onEdit = () => {
-    this.setState({ editing: true })
+    const topLine = this.linesRef.current?.getTopRow() ?? 0
+    this.setState({ editing: true, topLine })
   }
 
-  private onStopEditing = () => {
-    this.setState({ editing: false })
+  private onStopEditing = (topLine: number | null) => {
+    this.setState({ editing: false, topLine: topLine ?? this.state.topLine })
   }
 
   private onPrevious = () => {
