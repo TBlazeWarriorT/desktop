@@ -27,6 +27,9 @@ keep it updated when something lands.
   type errors; the background `tsc --watch` in `script/start.ts` does. Check with
   `node_modules/.bin/tsc -p tsconfig.json --noEmit` and
   `-p app/src/highlighter/tsconfig.json` (the root tsconfig excludes the highlighter).
+- Manual testing happens in `../desktop-testrepo`, rebuilt from scratch by
+  `node script/make-test-repo.mjs` (fake `origin` inside its `.git`, one scenario per
+  feature, listed in its `TESTING.md`). Add a scenario there when a feature lands.
 - Tests: `node script/test.mjs --no-experimental-webstorage app/test/unit/<file>-test.ts`.
   Node 25's built-in `localStorage` stub hides jsdom's, so without the flag any test that
   imports UI code fails with `localStorage.getItem is not a function` (upstream tests too).
