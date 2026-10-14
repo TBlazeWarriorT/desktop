@@ -1,56 +1,57 @@
-# Roadmap da fork
+# Fork roadmap
 
-Pendências e ideias da fork do GitHub Desktop. Notas de como rodar e da arquitetura
-ficam no `AGENTS.md`.
+Pending work and ideas for this GitHub Desktop fork. How to run it and architecture
+notes are in `AGENTS.md`.
 
 ## Features
 
-1. [ ] **Fetch de branch sem checkout** (Right Click → Fetch no dropdown): fast-forward com
-       `fetch x:x`; divergiu → `merge-tree`; conflito ou pull com rebase → diálogo pra
-       trocar de branch e dar pull.
-2. [ ] **Conflitos A:** achar, contar, navegar e mostrar marcadores de conflito em qualquer
-       arquivo não commitado (só leitura, com sintaxe).
-3. [ ] **Stashes nomeadas:** lista, nome, apply/pop/drop, sem overwrite por branch.
-4. [ ] **Histórico com busca** por mensagem, autor e SHA.
-5. [ ] **Histórico de um arquivo:** Right Click num arquivo → todos os commits que mudaram
-       ele (`git log --follow`).
-6. [ ] **Aviso de conflito com a main:** a cada commit, checar se a branch conflita com a
-       main (`git merge-tree --write-tree`, sem checkout) e pôr um ícone nos commits
-       conflitantes.
-7. [ ] **Visualizar arquivos inteiros**, com a sintaxe e números de linha do diff, mas sem
-       cor de adição/remoção (não como "tudo adicionado"). Entradas:
-       - "Ver arquivo inteiro" em cada arquivo aberto no diff (mesmo commit);
-       - Repository > View All Files: árvore de pastas do repo no HEAD, com busca fuzzy
-         (repos com milhares de arquivos, então árvore virtualizada, não lista plana);
-       - Right Click num commit do histórico → "Ver arquivos neste commit".
-8. [ ] **Preview de `.md`** igual ao GitHub web.
-       - [x] Botão Preview/Diff no diff de `.md` (Changes e History), lembra a última escolha;
-             imagens relativas embutidas da versão certa do arquivo.
-       - [ ] Mesmo preview no visualizador do 7.
-       - [ ] Links relativos entre `.md` (hoje só links https abrem, no navegador).
-9. [ ] **Editor de texto simples** embutido.
-10. [ ] **Conflitos B:** merge editor (escolher um/outro/ambos, editar, reordenar linhas;
-        pop-out depois). Em cima de 2 e 9.
+1. [ ] **Fetch a branch without checking it out** (Right Click → Fetch in the branch
+       dropdown): fast-forward with `fetch x:x`; diverged → `merge-tree`; conflicts or
+       rebase pulls → dialog offering to switch to the branch and pull.
+2. [ ] **Conflicts A:** find, count, navigate and display conflict markers in any
+       uncommitted file (read-only, with syntax highlighting).
+3. [ ] **Named stashes:** list, names, apply/pop/drop, no per-branch overwrite.
+4. [ ] **History search** by message, author and SHA.
+5. [ ] **File history:** Right Click a file → every commit that changed it
+       (`git log --follow`).
+6. [ ] **Conflict warning against main:** on each commit, check whether the branch
+       conflicts with main (`git merge-tree --write-tree`, no checkout) and mark
+       conflicting commits with an icon.
+7. [ ] **View whole files**, with the diff's syntax highlighting and line numbers but no
+       add/remove coloring (not as "everything added"). Entry points:
+       - "View whole file" on any file open in a diff (same commit);
+       - Repository > View All Files: the repo's folder tree at HEAD with fuzzy search
+         (repos have thousands of files, so a virtualized tree, not a flat list);
+       - Right Click a commit in History → "Browse files at this commit".
+8. [ ] **Markdown preview** like github.com.
+       - [x] Preview/Diff button on `.md` diffs (Changes and History), remembering the last
+             choice; relative images inlined from the right version of the file.
+       - [ ] Same preview in the viewer from 7.
+       - [ ] Relative links between `.md` files (only https links open today, in the browser).
+9. [ ] **Simple built-in text editor.**
+10. [ ] **Conflicts B:** merge editor (pick one/other/both, edit, reorder lines; pop-out
+        later). Builds on 2 and 9.
 11. [ ] **Remotes/upstreams:** add/remove/rename/set-url.
-12. [ ] **Reword e edição de commits antigos**, não só o último.
+12. [ ] **Reword and edit older commits**, not just the last one.
 
-## Sintaxe rAthena
+## rAthena syntax
 
-- [ ] **Override (fase 3):** dropdown "Sintaxe" ao lado do Diff Options (Auto / rAthena /
-      rAthena YAML / Texto puro / outras), com "lembrar pra este caminho neste repo" e
-      mostrando a fonte ativa (ex.: "rAthena · Gear-Mechanica-Server · 753 cmds").
-- [ ] `Script: "..."` em linha única no YAML (hoje só blocos `|` e `>`).
-- [ ] Tooltip com a doc do comando (de `doc/script_commands.txt`).
-- [ ] Marcar comando desconhecido e `callfunc "F_X"` inexistente.
+- [ ] **Override (phase 3):** a "Syntax" dropdown next to Diff Options (Auto / rAthena /
+      rAthena YAML / Plain text / others), with "remember for this path in this repo" and
+      showing the active source (e.g. "rAthena · Gear-Mechanica-Server · 753 cmds").
+- [ ] Single-line `Script: "..."` in YAML (only `|` and `>` blocks are handled today).
+- [ ] Tooltip with the command's docs (from `doc/script_commands.txt`).
+- [ ] Flag unknown commands and `callfunc "F_X"` targets that don't exist.
 
-## Problemas conhecidos
+## Known issues
 
-- [ ] **403 em `api.github.com` nos repos da TheGearfinderSociety:** o build de dev usa o
-      app OAuth de desenvolvimento do GitHub Desktop, bloqueado pela org. Aprovar o app
-      na org, ou registrar um OAuth App próprio da fork (necessário pra distribuir).
-- [ ] **Rollback de prefs:** um repo adicionado sumiu depois de fechar o app pelo bat.
+- [ ] **403 from `api.github.com` on TheGearfinderSociety repos:** the dev build signs in
+      with GitHub Desktop's development OAuth app, which the org blocks. Approve that app
+      in the org, or register the fork's own OAuth app (needed to distribute anyway).
+- [ ] **Preferences rollback:** an added repository disappeared after closing the app via
+      the bat file.
 
-## Distribuição pro time
+## Distributing to the team
 
-- [ ] Build de produção com nome e ID próprios, convivendo com o Desktop oficial.
-- [ ] Auto-update pelos Releases da fork (ou desligado) e telemetria desligada.
+- [ ] Production build with its own name and ID, installable next to the official Desktop.
+- [ ] Auto-update from the fork's Releases (or disabled), and telemetry disabled.
