@@ -1,6 +1,6 @@
 import { describe, it, TestContext } from 'node:test'
 import assert from 'node:assert'
-import { writeFile } from 'fs/promises'
+import { mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { exec } from 'dugite'
 import { setupEmptyRepository } from '../helpers/repositories'
@@ -130,6 +130,27 @@ describe('CommitSearch', () => {
       'Unrelated',
       'Tweak',
       'Fix the healer',
+    ])
+  })
+
+  it("lists a folder's commits", async t => {
+    const repo = await setup(t)
+    await mkdir(join(repo.path, 'npc'))
+    await writeFile(join(repo.path, 'npc', 'a.txt'), 'a\n')
+    await run(repo, ['add', '.'])
+    await run(repo, ['commit', '-q', '-m', 'Add npc/a'])
+    await writeFile(join(repo.path, 'npc', 'b.txt'), 'b\n')
+    await run(repo, ['add', '.'])
+    await run(repo, ['commit', '-q', '-m', 'Add npc/b'])
+
+    const folder = new CommitSearch(
+      repo,
+      { query: '', inCode: false, allBranches: false, path: 'npc/' },
+      ['text']
+    )
+    assert.deepStrictEqual(titles(await folder.next(100)), [
+      'Add npc/b',
+      'Add npc/a',
     ])
   })
 

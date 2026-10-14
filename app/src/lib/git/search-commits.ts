@@ -17,7 +17,7 @@ export interface ICommitSearchOptions {
   /** Also find commits whose added or removed lines contain the query. */
   readonly inCode: boolean
   readonly allBranches: boolean
-  /** Only commits touching this file, following renames. */
+  /** Only commits touching this file (renames followed) or, ending in /, folder. */
   readonly path?: string | null
 }
 
@@ -157,6 +157,9 @@ export class CommitSearch {
     const { path, allBranches } = this.options
     if (!path) {
       return Promise.resolve([])
+    } else if (path.endsWith('/')) {
+      // A folder: --follow only works for single files.
+      return Promise.resolve([path.slice(0, -1)])
     }
     this.paths ??= git(
       [

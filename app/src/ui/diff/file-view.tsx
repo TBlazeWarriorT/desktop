@@ -7,6 +7,7 @@ import {
   WholeFileSource,
   highlightWholeFile,
   loadWholeFile,
+  sameLines,
 } from './whole-file-lines'
 import { getBoolean, setBoolean } from '../../lib/local-storage'
 
@@ -33,6 +34,8 @@ interface IFileViewState {
 /** A file in full, read-only, with syntax highlighting and line numbers. */
 export class FileView extends React.Component<IFileViewProps, IFileViewState> {
   private loadId = 0
+  /** The shown lines got their tokens; a reload of the same text can stop. */
+  private highlighted = false
 
   public constructor(props: IFileViewProps) {
     super(props)
@@ -40,7 +43,7 @@ export class FileView extends React.Component<IFileViewProps, IFileViewState> {
   }
 
   public componentDidMount() {
-    this.load()
+    this.load(false)
   }
 
   public componentDidUpdate(prevProps: IFileViewProps) {
@@ -48,26 +51,38 @@ export class FileView extends React.Component<IFileViewProps, IFileViewState> {
     if (
       prevProps.path !== path ||
       prevProps.repository.id !== repository.id ||
-      prevProps.reloadKey !== reloadKey ||
       sourceKey(prevProps.source) !== sourceKey(source)
     ) {
-      this.load()
+      this.load(false)
+    } else if (prevProps.reloadKey !== reloadKey) {
+      this.load(true)
     }
   }
 
-  private async load() {
+  /** `isReload`: same file, maybe changed (e.g. the app got focus again). */
+  private async load(isReload: boolean) {
     const id = ++this.loadId
     const { repository, path, source } = this.props
     const file = await loadWholeFile(repository, path, source)
-    if (id !== this.loadId) {
+    const previous = this.state.file
+    if (
+      id !== this.loadId ||
+      (isReload &&
+        this.highlighted &&
+        previous !== null &&
+        sameLines(previous.lines, file.lines))
+    ) {
       return
     }
-    this.setState({ file, tokens: {} })
+    // A changed file keeps its old colors until the new ones arrive, no flash.
+    this.setState({ file, tokens: isReload ? this.state.tokens : {} })
+    this.highlighted = false
 
     if (file.lines.length > 0) {
       const tokens = await highlightWholeFile(repository, path, file.lines)
       if (id === this.loadId) {
         this.setState({ tokens })
+        this.highlighted = true
       }
     }
   }

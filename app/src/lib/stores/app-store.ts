@@ -2051,8 +2051,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     // In a file's history, open that file rather than the first one.
     const { historyFilePath } = this.repositoryStateCache.get(repository)
-    const historyFile = changesetData.files.find(
-      f => f.path === historyFilePath
+    const historyFile = changesetData.files.find(f =>
+      historyFilePath?.endsWith('/')
+        ? f.path.startsWith(historyFilePath)
+        : f.path === historyFilePath
     )
     const firstFileOrDefault =
       noFileSelected && changesetData.files.length

@@ -15,6 +15,8 @@ import {
   listRepositoryFiles,
 } from '../../lib/git/list-files'
 import { IMatches, match } from '../../lib/fuzzy-find'
+import memoizeOne from 'memoize-one'
+import { showFilesContextMenu } from './files-context-menu'
 
 const RowHeight = 24
 const MaxSearchResults = 500
@@ -27,6 +29,9 @@ interface IFilesSidebarProps {
   readonly selectedPath: string | null
   /** Reloads the list when this changes (the working directory's status). */
   readonly reloadKey: unknown
+  readonly currentBranchName: string | null
+  readonly externalEditorLabel?: string
+  readonly onOpenInExternalEditor: (fullPath: string) => void
 }
 
 interface IRow extends IFileTreeRow {
@@ -38,6 +43,7 @@ interface IFileRowProps {
   readonly icon: typeof octicons.file
   readonly selected: boolean
   readonly onClick: (row: IRow) => void
+  readonly onContextMenu: (row: IRow) => void
 }
 
 class FileRow extends React.Component<IFileRowProps> {
@@ -51,6 +57,7 @@ class FileRow extends React.Component<IFileRowProps> {
         })}
         style={{ paddingLeft: `${8 + row.depth * 16}px` }}
         onClick={this.onClick}
+        onContextMenu={this.onContextMenu}
       >
         <Octicon symbol={icon} />
         <span className="files-row-name">
@@ -67,6 +74,11 @@ class FileRow extends React.Component<IFileRowProps> {
   private onClick = () => {
     this.props.onClick(this.props.row)
   }
+
+  private onContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault()
+    this.props.onContextMenu(this.props.row)
+  }
 }
 
 interface IFilesSidebarState {
@@ -82,6 +94,27 @@ export class FilesSidebar extends React.Component<
   IFilesSidebarState
 > {
   private loadId = 0
+
+  // Each visible row asks for the rows, and a fuzzy match over thousands of
+  // paths is slow: compute once per change of paths, query or open folders.
+  private computeRows = memoizeOne(
+    (
+      paths: ReadonlyArray<string>,
+      query: string,
+      expanded: ReadonlySet<string>
+    ): ReadonlyArray<IRow> =>
+      query === ''
+        ? getFileTreeRows(paths, expanded)
+        : match(query, paths, p => [Path.posix.basename(p), p])
+            .slice(0, MaxSearchResults)
+            .map(m => ({
+              path: m.item,
+              name: m.item,
+              depth: 0,
+              isFolder: false,
+              matches: m.matches,
+            }))
+  )
 
   public constructor(props: IFilesSidebarProps) {
     super(props)
@@ -205,18 +238,7 @@ export class FilesSidebar extends React.Component<
 
   private getRows(): ReadonlyArray<IRow> {
     const { paths, query, expanded } = this.state
-    if (query.trim() === '') {
-      return getFileTreeRows(paths, expanded)
-    }
-    return match(query.trim(), paths, p => [Path.posix.basename(p), p])
-      .slice(0, MaxSearchResults)
-      .map(m => ({
-        path: m.item,
-        name: m.item,
-        depth: 0,
-        isFolder: false,
-        matches: m.matches,
-      }))
+    return this.computeRows(paths, query.trim(), expanded)
   }
 
   private renderRow = ({ index, key, style }: ListRowProps) => {
@@ -237,6 +259,7 @@ export class FilesSidebar extends React.Component<
           icon={icon}
           selected={selected}
           onClick={this.onRowClicked}
+          onContextMenu={this.onRowContextMenu}
         />
       </div>
     )
@@ -256,6 +279,25 @@ export class FilesSidebar extends React.Component<
         row.path
       )
     }
+  }
+
+  private onRowContextMenu = (row: IRow) => {
+    const {
+      repository,
+      dispatcher,
+      commitish,
+      currentBranchName,
+      externalEditorLabel,
+      onOpenInExternalEditor,
+    } = this.props
+    showFilesContextMenu(row.path, row.isFolder, {
+      repository,
+      dispatcher,
+      commitish,
+      currentBranchName,
+      externalEditorLabel,
+      onOpenInExternalEditor,
+    })
   }
 
   private onQueryChanged = (query: string) => {

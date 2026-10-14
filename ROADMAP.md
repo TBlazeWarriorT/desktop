@@ -30,7 +30,7 @@ notes are in `AGENTS.md`.
        becomes a chip in the History search (searchable, renames followed), and each
        commit opens on that file.
        - [ ] Open on the file in commits from before a rename (old name).
-       - [ ] Folder history (a path prefix, no --follow).
+       - [x] Folder history: Right Click a folder in the Files tab > Show history.
 6. [x] **Conflict warning against main:** each of the branch's newest 50 commits
        not in the remote main (origin/HEAD, else origin/main or master) is checked with
        `git merge-tree --write-tree`, no checkout; conflicting ones get an orange alert
@@ -42,6 +42,7 @@ notes are in `AGENTS.md`.
        - [x] **File** in the diff's view switcher (Changes: disk; History: that commit).
        - [x] **Files** tab (Ctrl+3): working-directory tree with fuzzy find.
        - [x] Right Click a commit → Browse files at this commit.
+       - [x] Right Click in the tree: reveal, open, copy path, history, View on GitHub.
        - [ ] Image files (binary files only say "not shown" today).
 8. [ ] **Markdown preview** like github.com.
        - [x] Preview/Diff button on `.md` diffs (Changes and History), remembering the last

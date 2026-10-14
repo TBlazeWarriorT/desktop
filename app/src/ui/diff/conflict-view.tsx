@@ -14,6 +14,7 @@ import {
   WholeFileLines,
   highlightWholeFile,
   loadWholeFile,
+  sameLines,
 } from './whole-file-lines'
 import { Button } from '../lib/button'
 import { Octicon } from '../octicons'
@@ -52,6 +53,8 @@ export class ConflictView extends React.Component<
 > {
   private readonly linesRef = React.createRef<WholeFileLines>()
   private loadId = 0
+  /** The shown lines got their tokens; a reload of the same text can stop. */
+  private highlighted = false
 
   public constructor(props: IConflictViewProps) {
     super(props)
@@ -77,7 +80,11 @@ export class ConflictView extends React.Component<
       kind: 'disk',
     })
     const regions = findConflicts(lines)
-    if (id !== this.loadId) {
+    // Refocusing the app reloads the file; unchanged, keep it as it is.
+    if (
+      id !== this.loadId ||
+      (!isNewFile && this.highlighted && sameLines(this.state.lines, lines))
+    ) {
       return
     }
 
@@ -86,7 +93,8 @@ export class ConflictView extends React.Component<
         lines,
         regions,
         kinds: getConflictLineKinds(lines.length, regions),
-        tokens: {},
+        // A changed file keeps its old colors until the new ones arrive.
+        tokens: isNewFile ? {} : this.state.tokens,
         current: isNewFile
           ? 0
           : Math.min(this.state.current, Math.max(regions.length - 1, 0)),
@@ -94,9 +102,11 @@ export class ConflictView extends React.Component<
       () => isNewFile && this.scrollToConflict(0)
     )
 
+    this.highlighted = false
     const tokens = await highlightWholeFile(repository, file.path, lines)
     if (id === this.loadId) {
       this.setState({ tokens })
+      this.highlighted = true
     }
   }
 

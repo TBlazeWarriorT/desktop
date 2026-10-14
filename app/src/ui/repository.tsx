@@ -404,6 +404,13 @@ export class RepositoryView extends React.Component<
         commitish={state.filesCommitish}
         selectedPath={state.filesSelectedPath}
         reloadKey={state.changesState.workingDirectory}
+        currentBranchName={
+          state.branchesState.tip.kind === TipState.Valid
+            ? state.branchesState.tip.branch.name
+            : null
+        }
+        externalEditorLabel={this.props.externalEditorLabel}
+        onOpenInExternalEditor={this.props.onOpenInExternalEditor}
       />
     )
   }

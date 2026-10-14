@@ -291,6 +291,9 @@ on that file; type in the box to search within them; click the file chip to go b
   directory; type to find a file (\`heal\` finds \`npc/custom/healer.txt\`).
 - History: Right Click a commit > Browse files at this commit. The tab shows
   "At commit …" with ✕ to go back to the working directory.
+- Right Click a file in the tree: Show in Explorer, Open in editor, Copy path,
+  Show history, View on GitHub. At an old commit the open ones say
+  "(current version)". On a folder, Show history lists the commits under it.
 
 ## Conflict warning against main
 

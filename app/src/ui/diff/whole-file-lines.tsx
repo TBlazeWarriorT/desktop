@@ -58,6 +58,14 @@ export async function loadWholeFile(
   }
 }
 
+/** Same text, so a reload can skip re-rendering and re-highlighting. */
+export function sameLines(
+  a: ReadonlyArray<string>,
+  b: ReadonlyArray<string>
+): boolean {
+  return a.length === b.length && a.every((line, i) => line === b[i])
+}
+
 /** Syntax tokens for every line, rAthena included. */
 export async function highlightWholeFile(
   repository: Repository,

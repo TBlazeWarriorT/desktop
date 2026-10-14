@@ -16,6 +16,12 @@ import {
 } from '../../lib/git/search-commits'
 
 const PageSize = 100
+
+/** File or folder name for the chip; folders end in a slash. */
+const displayName = (path: string) =>
+  path.endsWith('/')
+    ? `${path.slice(0, -1).split('/').pop()}/`
+    : path.split('/').pop()
 const DebounceMs = 400
 /** Load more when the list is scrolled within this many rows of the end. */
 const CloseToBottomThreshold = 10
@@ -129,9 +135,13 @@ export class HistorySearch extends React.Component<
             ariaLabel={`Stop filtering by ${filePath}`}
             onClick={this.props.onFilePathCleared}
           >
-            <Octicon symbol={octicons.file} />
+            <Octicon
+              symbol={
+                filePath.endsWith('/') ? octicons.fileDirectory : octicons.file
+              }
+            />
             <span className="history-search-file-name">
-              {filePath.split('/').pop()}
+              {displayName(filePath)}
             </span>
             <Octicon symbol={octicons.x} />
           </Button>
@@ -210,7 +220,7 @@ export class HistorySearch extends React.Component<
         <div className="history-search-status">
           {count}
           {this.props.filePath !== null &&
-            ` touching ${this.props.filePath.split('/').pop()}`}
+            ` touching ${displayName(this.props.filePath)}`}
           {status && ` · ${status}`}
         </div>
         <div className="compare-commit-list">
