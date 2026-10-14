@@ -14,6 +14,7 @@ import { assertNever } from '../../lib/fatal-error'
 import { PopupType } from '../../models/popup'
 import { getStashTitle } from '../stashing/stash-list'
 import { Button } from '../lib/button'
+import { previewStashMerge } from '../../lib/git/stash-extras'
 
 interface ILocalChangesOverwrittenDialogProps {
   readonly repository: Repository
@@ -37,8 +38,12 @@ interface ILocalChangesOverwrittenDialogProps {
    */
   readonly files: ReadonlyArray<string>
 }
+type MergePreview = Awaited<ReturnType<typeof previewStashMerge>>
+
 interface ILocalChangesOverwrittenDialogState {
   readonly stashing: boolean
+  /** What merging the stash would do; undefined while it's being checked. */
+  readonly mergePreview?: MergePreview
 }
 
 export class LocalChangesOverwrittenDialog extends React.Component<
@@ -48,6 +53,17 @@ export class LocalChangesOverwrittenDialog extends React.Component<
   public constructor(props: ILocalChangesOverwrittenDialogProps) {
     super(props)
     this.state = { stashing: false }
+  }
+
+  public async componentDidMount() {
+    const stash = this.stashToMerge
+    if (stash !== null) {
+      const mergePreview = await previewStashMerge(
+        this.props.repository,
+        stash
+      ).catch(() => null)
+      this.setState({ mergePreview })
+    }
   }
 
   public render() {
@@ -105,7 +121,7 @@ export class LocalChangesOverwrittenDialog extends React.Component<
   private get canStashChanges() {
     // Stashes don't overwrite each other in this fork, so restoring one can
     // stash the current changes too.
-    return !this.props.hasExistingStash && !this.state.stashing
+    return !this.props.hasExistingStash
   }
 
   private renderStashText() {
@@ -115,14 +131,38 @@ export class LocalChangesOverwrittenDialog extends React.Component<
 
     if (this.stashToMerge !== null) {
       return (
-        <p>
-          Stash your changes to restore them later, or merge them with the stash
-          and resolve the conflicts in the files.
-        </p>
+        <>
+          <p>Stash your changes to restore them later, or merge them:</p>
+          <p className="merge-stash-preview">{this.getMergePreviewText()}</p>
+        </>
       )
     }
 
     return <p>You can stash your changes now and recover them afterwards.</p>
+  }
+
+  private getMergePreviewText() {
+    const preview = this.state.mergePreview
+    if (preview === undefined) {
+      return 'Checking whether they merge cleanly…'
+    }
+    if (preview === null) {
+      return 'Merging is not available.'
+    }
+    if (preview.clash !== undefined) {
+      return `Merging is not possible: the stash adds "${preview.clash}", which already exists as a new file.`
+    }
+    const n = preview.conflicted.length
+    return n === 0
+      ? 'Your changes and the stash touch different lines, so merging keeps both with no conflicts.'
+      : `Merging leaves conflict markers in ${n} ${
+          n === 1 ? 'file' : 'files'
+        } for you to resolve: ${preview.conflicted.join(', ')}`
+  }
+
+  private get canMerge() {
+    const preview = this.state.mergePreview
+    return !!preview && preview.clash === undefined
   }
 
   /** The stash being applied, which can be merged with the changes instead. */
@@ -157,7 +197,11 @@ export class LocalChangesOverwrittenDialog extends React.Component<
     return (
       <DialogFooter>
         {this.stashToMerge !== null && (
-          <Button className="merge-stash-button" onClick={this.onMergeClick}>
+          <Button
+            className="merge-stash-button"
+            onClick={this.onMergeClick}
+            disabled={!this.canMerge}
+          >
             {__DARWIN__ ? 'Merge with My Changes' : 'Merge with my changes'}
           </Button>
         )}

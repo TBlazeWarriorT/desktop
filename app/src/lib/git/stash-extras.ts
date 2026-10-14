@@ -88,28 +88,29 @@ export async function renameStashEntry(
 const stashLabel = (stash: IStashEntry) =>
   stash.title ? `Stash "${stash.title}"` : 'Stash'
 
-/**
- * Applies a stash on top of local changes that touch the same files, which
- * `git stash apply` refuses: a snapshot of the working directory is merged
- * with the stash by `git merge-tree` and written back, conflict markers
- * included. `keep` false drops the stash afterwards (Restore).
- */
-export async function mergeStashWithLocalChanges(
+interface IStashMergePlan {
+  /** Commit of the working directory (`git stash create`). */
+  readonly mine: string
+  /** The merged tree, conflict markers included. */
+  readonly tree: string
+  readonly conflicted: ReadonlyArray<string>
+  /** A file the stash adds that already exists untracked: merging stops. */
+  readonly clash: string | undefined
+}
+
+/** Merges in git's object store only; the working directory is untouched. */
+async function planStashMerge(
   repository: Repository,
-  stash: IStashEntry,
-  keep: boolean
-): Promise<void> {
-  const run = async (args: string[], codes = [0]) =>
-    git(args, repository.path, 'mergeStashWithLocalChanges', {
+  stash: IStashEntry
+): Promise<IStashMergePlan | null> {
+  const run = (args: string[], codes = [0]) =>
+    git(args, repository.path, 'planStashMerge', {
       successExitCodes: new Set(codes),
     })
 
-  // A commit of the working directory; nothing is touched yet.
   const mine = (await run(['stash', 'create'])).stdout.trim()
   if (mine === '') {
-    return keep
-      ? applyStashEntry(repository, stash.stashSha)
-      : popStashEntry(repository, stash.stashSha)
+    return null
   }
 
   // Labels are the commit ids; relabelled once written to disk.
@@ -139,10 +140,46 @@ export async function mergeStashWithLocalChanges(
   const clash = added.stdout
     .split('\n')
     .find(p => p !== '' && untrackedPaths.has(p))
+
+  return { mine, tree, conflicted: [...new Set(conflicted)], clash }
+}
+
+/**
+ * What "merge with my changes" would do, without doing it: the files that
+ * would get conflict markers, or null when there are no local changes.
+ */
+export async function previewStashMerge(
+  repository: Repository,
+  stash: IStashEntry
+) {
+  const plan = await planStashMerge(repository, stash)
+  return plan && { conflicted: plan.conflicted, clash: plan.clash }
+}
+
+/**
+ * Applies a stash on top of local changes that touch the same files, which
+ * `git stash apply` refuses: a snapshot of the working directory is merged
+ * with the stash and written back, conflict markers included. `keep` false
+ * drops the stash afterwards (Restore).
+ */
+export async function mergeStashWithLocalChanges(
+  repository: Repository,
+  stash: IStashEntry,
+  keep: boolean
+): Promise<void> {
+  const plan = await planStashMerge(repository, stash)
+  if (plan === null) {
+    return keep
+      ? applyStashEntry(repository, stash.stashSha)
+      : popStashEntry(repository, stash.stashSha)
+  }
+  const { mine, tree, conflicted, clash } = plan
   if (clash !== undefined) {
     throw new Error(`The stash adds "${clash}", which exists as a new file.`)
   }
 
+  const run = (args: string[]) =>
+    git(args, repository.path, 'mergeStashWithLocalChanges')
   // Safety net until the merged files are on disk.
   const backup = `Your changes before merging ${stashLabel(stash)}`
   await run(['stash', 'store', '-m', backup, mine])

@@ -16,6 +16,7 @@ import {
 import {
   applyStashEntry,
   mergeStashWithLocalChanges,
+  previewStashMerge,
   renameStashEntry,
 } from '../../src/lib/git/stash-extras'
 
@@ -144,6 +145,28 @@ describe('named stashes', () => {
       const left = (await getStashes(repo)).allEntries.map(e => e.title)
       assert.deepStrictEqual(left, keep ? ['Test'] : [])
     }
+  })
+
+  it('previews whether merging leaves conflicts, touching nothing', async t => {
+    const repo = await setup(t)
+    await write(repo, 'a.txt', 'one\ntwo\nthree\n')
+    await run(repo, 'commit', '-am', 'three lines')
+    await write(repo, 'a.txt', 'ONE\ntwo\nthree\n')
+    await createDesktopStashEntry(repo, 'main', [], { title: 'First line' })
+    const [stash] = (await getStashes(repo)).allEntries
+
+    // Same file, other line: git stash apply refuses, but it merges cleanly.
+    await write(repo, 'a.txt', 'one\ntwo\nTHREE\n')
+    assert.deepStrictEqual(await previewStashMerge(repo, stash), {
+      conflicted: [],
+      clash: undefined,
+    })
+
+    await write(repo, 'a.txt', 'uno\ntwo\nthree\n')
+    const preview = await previewStashMerge(repo, stash)
+    assert.deepStrictEqual(preview?.conflicted, ['a.txt'])
+    assert.equal(await read(repo, 'a.txt'), 'uno\ntwo\nthree\n')
+    assert.equal((await getStashes(repo)).allEntries.length, 1)
   })
 
   it('renames a stash keeping its content, date and branch', async t => {
