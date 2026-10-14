@@ -4,8 +4,7 @@ import { Dispatcher } from '../dispatcher'
 import { Repository } from '../../models/repository'
 import { PopupType } from '../../models/popup'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
-import { ErrorWithMetadata } from '../../lib/error-with-metadata'
-import { RetryActionType } from '../../models/retry-actions'
+import { restoreStash } from './stash-actions'
 import { Button } from '../lib/button'
 import { getStashTitle } from './stash-list'
 
@@ -117,7 +116,7 @@ export class StashDiffHeader extends React.Component<
     const { dispatcher, repository, stashEntry } = this.props
     this.setState({ isApplying: true })
     try {
-      await dispatcher.applyStash(repository, stashEntry)
+      await restoreStash(dispatcher, repository, stashEntry, true)
     } finally {
       this.setState({ isApplying: false })
     }
@@ -128,17 +127,7 @@ export class StashDiffHeader extends React.Component<
 
     try {
       this.setState({ isRestoring: true })
-      await dispatcher.popStash(repository, stashEntry)
-    } catch (err) {
-      const errorWithMetadata = new ErrorWithMetadata(err, {
-        repository: repository,
-        retryAction: {
-          type: RetryActionType.PopStash,
-          stashEntry,
-          repository,
-        },
-      })
-      dispatcher.postError(errorWithMetadata)
+      await restoreStash(dispatcher, repository, stashEntry, false)
     } finally {
       this.setState({ isRestoring: false })
     }

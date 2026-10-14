@@ -20,6 +20,7 @@ export enum RetryActionType {
   Reorder,
   DiscardChanges,
   PopStash,
+  ApplyStash,
 }
 
 /** The retriable actions and their associated data. */
@@ -88,7 +89,7 @@ export type RetryAction =
       files: ReadonlyArray<WorkingDirectoryFileChange>
     }
   | {
-      type: RetryActionType.PopStash
+      type: RetryActionType.PopStash | RetryActionType.ApplyStash
       repository: Repository
       stashEntry: IStashEntry
     }

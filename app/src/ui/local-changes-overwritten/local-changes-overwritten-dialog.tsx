@@ -12,6 +12,8 @@ import { Dispatcher } from '../dispatcher'
 import { PathText } from '../lib/path-text'
 import { assertNever } from '../../lib/fatal-error'
 import { PopupType } from '../../models/popup'
+import { getStashTitle } from '../stashing/stash-list'
+import { Button } from '../lib/button'
 
 interface ILocalChangesOverwrittenDialogProps {
   readonly repository: Repository
@@ -101,11 +103,9 @@ export class LocalChangesOverwrittenDialog extends React.Component<
   }
 
   private get canStashChanges() {
-    return (
-      !this.props.hasExistingStash &&
-      !this.state.stashing &&
-      this.props.retryAction.type !== RetryActionType.PopStash
-    )
+    // Stashes don't overwrite each other in this fork, so restoring one can
+    // stash the current changes too.
+    return !this.props.hasExistingStash && !this.state.stashing
   }
 
   private renderStashText() {
@@ -113,7 +113,40 @@ export class LocalChangesOverwrittenDialog extends React.Component<
       return null
     }
 
+    if (this.stashToMerge !== null) {
+      return (
+        <p>
+          Stash your changes to restore them later, or merge them with the stash
+          and resolve the conflicts in the files.
+        </p>
+      )
+    }
+
     return <p>You can stash your changes now and recover them afterwards.</p>
+  }
+
+  /** The stash being applied, which can be merged with the changes instead. */
+  private get stashToMerge() {
+    const { retryAction } = this.props
+    return retryAction.type === RetryActionType.PopStash ||
+      retryAction.type === RetryActionType.ApplyStash
+      ? retryAction.stashEntry
+      : null
+  }
+
+  private onMergeClick = async () => {
+    const { repository, dispatcher, retryAction } = this.props
+    const stash = this.stashToMerge
+    if (stash === null) {
+      return
+    }
+    this.setState({ stashing: true })
+    this.props.onDismissed()
+    await dispatcher.mergeStash(
+      repository,
+      stash,
+      retryAction.type === RetryActionType.ApplyStash
+    )
   }
 
   private renderFooter() {
@@ -123,6 +156,11 @@ export class LocalChangesOverwrittenDialog extends React.Component<
 
     return (
       <DialogFooter>
+        {this.stashToMerge !== null && (
+          <Button className="merge-stash-button" onClick={this.onMergeClick}>
+            {__DARWIN__ ? 'Merge with My Changes' : 'Merge with my changes'}
+          </Button>
+        )}
         <OkCancelButtonGroup
           okButtonText={
             __DARWIN__
@@ -137,24 +175,19 @@ export class LocalChangesOverwrittenDialog extends React.Component<
   }
 
   private onSubmit = async () => {
-    const { hasExistingStash, repository, dispatcher, retryAction } = this.props
+    const { repository, dispatcher, retryAction } = this.props
 
-    if (hasExistingStash) {
-      // When there's an existing stash we don't let the user stash the changes
-      // and we only show a "Close" button on the modal. In that case, the
-      // "Close" button submits the dialog and should only dismiss it.
+    if (!this.canStashChanges) {
+      // Only a "Close" button is shown then, and it submits the dialog.
       this.props.onDismissed()
       return
     }
 
     this.setState({ stashing: true })
 
-    // We know that there's no stash for the current branch so we can safely
-    // tell createStashForCurrentBranch not to show a confirmation dialog which
-    // would disrupt the async flow (since you can't await a dialog).
-    const createdStash = await dispatcher.createStashForCurrentBranch(
+    const createdStash = await dispatcher.createStash(
       repository,
-      false
+      this.getStashTitle()
     )
 
     this.props.onDismissed()
@@ -176,6 +209,20 @@ export class LocalChangesOverwrittenDialog extends React.Component<
     if (retryAction.type === RetryActionType.Rebase) {
       dispatcher.closePopup(PopupType.MultiCommitOperation)
     }
+  }
+
+  /** Names the stash made to get the current changes out of the way. */
+  private getStashTitle() {
+    const { retryAction } = this.props
+    if (
+      retryAction.type === RetryActionType.PopStash ||
+      retryAction.type === RetryActionType.ApplyStash
+    ) {
+      const verb =
+        retryAction.type === RetryActionType.PopStash ? 'restoring' : 'applying'
+      return `Before ${verb} "${getStashTitle(retryAction.stashEntry)}"`
+    }
+    return ''
   }
 
   /**
@@ -208,6 +255,8 @@ export class LocalChangesOverwrittenDialog extends React.Component<
         return 'discard changes'
       case RetryActionType.PopStash:
         return 'restore stashed changes'
+      case RetryActionType.ApplyStash:
+        return 'apply stashed changes'
       default:
         assertNever(
           this.props.retryAction,

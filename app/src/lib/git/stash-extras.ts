@@ -1,7 +1,14 @@
 import { git, GitError } from './core'
 import { Repository } from '../../models/repository'
 import { IStashEntry } from '../../models/stash-entry'
-import { createDesktopStashMessage, getStashes } from './stash'
+import { readFile, writeFile } from 'fs/promises'
+import { join } from 'path'
+import {
+  createDesktopStashMessage,
+  dropDesktopStashEntry,
+  getStashes,
+  popStashEntry,
+} from './stash'
 
 async function findStashRef(repository: Repository, stashSha: string) {
   const { allEntries } = await getStashes(repository)
@@ -76,4 +83,99 @@ export async function renameStashEntry(
     await git(['stash', 'drop', ref], repository.path, 'renameStashEntry')
   }
   return newSha
+}
+
+const stashLabel = (stash: IStashEntry) =>
+  stash.title ? `Stash "${stash.title}"` : 'Stash'
+
+/**
+ * Applies a stash on top of local changes that touch the same files, which
+ * `git stash apply` refuses: a snapshot of the working directory is merged
+ * with the stash by `git merge-tree` and written back, conflict markers
+ * included. `keep` false drops the stash afterwards (Restore).
+ */
+export async function mergeStashWithLocalChanges(
+  repository: Repository,
+  stash: IStashEntry,
+  keep: boolean
+): Promise<void> {
+  const run = async (args: string[], codes = [0]) =>
+    git(args, repository.path, 'mergeStashWithLocalChanges', {
+      successExitCodes: new Set(codes),
+    })
+
+  // A commit of the working directory; nothing is touched yet.
+  const mine = (await run(['stash', 'create'])).stdout.trim()
+  if (mine === '') {
+    return keep
+      ? applyStashEntry(repository, stash.stashSha)
+      : popStashEntry(repository, stash.stashSha)
+  }
+
+  // Labels are the commit ids; relabelled once written to disk.
+  const merge = await run(
+    [
+      'merge-tree',
+      '--write-tree',
+      '--name-only',
+      '--no-messages',
+      `--merge-base=${stash.parents[0]}`,
+      mine,
+      stash.stashSha,
+    ],
+    [0, 1]
+  )
+  const [tree, ...conflicted] = merge.stdout.split('\n').filter(l => l !== '')
+
+  const added = await run([
+    'diff',
+    '--name-only',
+    '--diff-filter=A',
+    mine,
+    tree,
+  ])
+  const untracked = await run(['ls-files', '--others', '--exclude-standard'])
+  const untrackedPaths = new Set(untracked.stdout.split('\n'))
+  const clash = added.stdout
+    .split('\n')
+    .find(p => p !== '' && untrackedPaths.has(p))
+  if (clash !== undefined) {
+    throw new Error(`The stash adds "${clash}", which exists as a new file.`)
+  }
+
+  // Safety net until the merged files are on disk.
+  const backup = `Your changes before merging ${stashLabel(stash)}`
+  await run(['stash', 'store', '-m', backup, mine])
+  await run(['read-tree', '--reset', '-u', tree])
+  await run(['reset', '-q'])
+  await relabelConflicts(repository, conflicted, {
+    [mine]: 'Your changes',
+    [stash.stashSha]: stashLabel(stash),
+    [stash.parents[0]]: 'Original',
+  })
+
+  if (!keep) {
+    await dropDesktopStashEntry(repository, stash.stashSha)
+  }
+  await dropDesktopStashEntry(repository, mine)
+}
+
+/** Replaces commit ids after conflict markers with readable names. */
+async function relabelConflicts(
+  repository: Repository,
+  paths: ReadonlyArray<string>,
+  labels: Record<string, string>
+) {
+  for (const path of new Set(paths)) {
+    const full = join(repository.path, path)
+    const content = await readFile(full, 'utf8')
+    const relabeled = content.replace(
+      /^([<|>]{7}) ([0-9a-f]{40})(\r?)$/gm,
+      (line, marker, sha, cr) =>
+        labels[sha] ? `${marker} ${labels[sha]}${cr}` : line
+    )
+    if (relabeled !== content) {
+      await writeFile(full, relabeled)
+    }
+  }
 }

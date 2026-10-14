@@ -87,3 +87,13 @@
   margin-top: var(--spacing);
   color: var(--color-conflicted);
 }
+
+// 'Merge with my changes' on the left, Close/Stash on the right.
+#local-changes-overwritten .dialog-footer:has(.merge-stash-button) {
+  flex-direction: row;
+  align-items: center;
+
+  .button-group {
+    margin-left: auto;
+  }
+}

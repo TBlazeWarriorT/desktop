@@ -10,6 +10,7 @@ import { RelativeTime } from '../relative-time'
 import { showContextualMenu } from '../../lib/menu-item'
 import { getBoolean, setBoolean } from '../../lib/local-storage'
 import { StashDiffViewerId } from '.'
+import { restoreStash } from './stash-actions'
 
 const ExpandedKey = 'stash-list-expanded'
 
@@ -154,11 +155,11 @@ export class StashList extends React.Component<
     showContextualMenu([
       {
         label: 'Restore',
-        action: () => dispatcher.popStash(repository, stash),
+        action: () => restoreStash(dispatcher, repository, stash, false),
       },
       {
         label: __DARWIN__ ? 'Apply (Keep Stash)' : 'Apply (keep stash)',
-        action: () => dispatcher.applyStash(repository, stash),
+        action: () => restoreStash(dispatcher, repository, stash, true),
       },
       {
         label: 'Rename…',

@@ -2,9 +2,12 @@ import { describe, it, TestContext } from 'node:test'
 import assert from 'node:assert'
 import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
-import { exec } from 'dugite'
+import { exec, GitError as DugiteError } from 'dugite'
+import { GitError } from '../../src/lib/git/core'
 import { setupEmptyRepository } from '../helpers/repositories'
 import { Repository } from '../../src/models/repository'
+import { getStatus } from '../../src/lib/git/status'
+import { getConflictMarkerCount } from '../../src/lib/conflict-markers'
 import {
   createDesktopStashEntry,
   getStashes,
@@ -12,6 +15,7 @@ import {
 } from '../../src/lib/git/stash'
 import {
   applyStashEntry,
+  mergeStashWithLocalChanges,
   renameStashEntry,
 } from '../../src/lib/git/stash-extras'
 
@@ -97,6 +101,49 @@ describe('named stashes', () => {
     await applyStashEntry(repo, stash.stashSha)
     assert.equal(await read(repo, 'a.txt'), 'kept\n')
     assert.equal((await getStashes(repo)).allEntries.length, 1)
+  })
+
+  it('fails like pop when local changes are in the way', async t => {
+    const repo = await setup(t)
+    await write(repo, 'a.txt', 'Test\n')
+    await createDesktopStashEntry(repo, 'main', [], { title: 'Test' })
+    await write(repo, 'a.txt', 'Also a test\n')
+    const [stash] = (await getStashes(repo)).allEntries
+
+    await assert.rejects(applyStashEntry(repo, stash.stashSha), e => {
+      assert.ok(e instanceof GitError)
+      assert.equal(e.result.gitError, DugiteError.MergeWithLocalChanges)
+      return true
+    })
+    assert.equal(await read(repo, 'a.txt'), 'Also a test\n')
+    assert.equal((await getStashes(repo)).allEntries.length, 1)
+  })
+
+  it('merges a stash with conflicting local changes', async t => {
+    for (const keep of [false, true]) {
+      const repo = await setup(t)
+      await write(repo, 'a.txt', 'Test\n')
+      await createDesktopStashEntry(repo, 'main', [], { title: 'Test' })
+      await write(repo, 'a.txt', 'Also a test\n')
+      await write(repo, 'b.txt', 'mine only\n')
+      await write(repo, 'new.txt', 'untracked\n')
+      const [stash] = (await getStashes(repo)).allEntries
+
+      await mergeStashWithLocalChanges(repo, stash, keep)
+
+      assert.equal(
+        await read(repo, 'a.txt'),
+        '<<<<<<< Your changes\nAlso a test\n=======\nTest\n>>>>>>> Stash "Test"\n'
+      )
+      // Shows up with the leftover-markers alert and the conflict view.
+      const status = await getStatus(repo)
+      const a = status!.workingDirectory.files.find(f => f.path === 'a.txt')!
+      assert.equal(getConflictMarkerCount(a.status), 3)
+      assert.equal(await read(repo, 'b.txt'), 'mine only\n')
+      assert.equal(await read(repo, 'new.txt'), 'untracked\n')
+      const left = (await getStashes(repo)).allEntries.map(e => e.title)
+      assert.deepStrictEqual(left, keep ? ['Test'] : [])
+    }
   })
 
   it('renames a stash keeping its content, date and branch', async t => {

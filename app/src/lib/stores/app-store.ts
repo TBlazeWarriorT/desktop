@@ -244,7 +244,11 @@ import {
   HookProgress,
   git,
 } from '../git'
-import { applyStashEntry, renameStashEntry } from '../git/stash-extras'
+import {
+  applyStashEntry,
+  mergeStashWithLocalChanges,
+  renameStashEntry,
+} from '../git/stash-extras'
 import {
   installGlobalLFSFilters,
   installLFSHooks,
@@ -9076,11 +9080,24 @@ export class AppStore extends TypedBaseStore<IAppState> {
     await this._selectStashedFile(repository)
   }
 
-  /** Applies a stash and keeps it. See `Dispatcher`. */
+  /**
+   * Applies a stash and keeps it. Throws like `_popStashEntry`, so callers
+   * can offer to stash local changes first. See `Dispatcher`.
+   */
   public async _applyStashEntry(repository: Repository, stash: IStashEntry) {
+    await applyStashEntry(repository, stash.stashSha)
+    await this._refreshRepository(repository)
+  }
+
+  /** See `Dispatcher`. */
+  public async _mergeStashWithLocalChanges(
+    repository: Repository,
+    stash: IStashEntry,
+    keep: boolean
+  ) {
     const gitStore = this.gitStoreCache.get(repository)
     await gitStore.performFailableOperation(() =>
-      applyStashEntry(repository, stash.stashSha)
+      mergeStashWithLocalChanges(repository, stash, keep)
     )
     await this._refreshRepository(repository)
   }

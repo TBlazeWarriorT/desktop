@@ -2381,6 +2381,8 @@ export class Dispatcher {
         )
       case RetryActionType.PopStash:
         return this.popStash(retryAction.repository, retryAction.stashEntry)
+      case RetryActionType.ApplyStash:
+        return this.applyStash(retryAction.repository, retryAction.stashEntry)
       default:
         return assertNever(retryAction, `Unknown retry action: ${retryAction}`)
     }
@@ -2886,6 +2888,19 @@ export class Dispatcher {
   /** Apply the given stash and keep it. */
   public applyStash(repository: Repository, stashEntry: IStashEntry) {
     return this.appStore._applyStashEntry(repository, stashEntry)
+  }
+
+  /** Apply a stash over local changes to the same files, leaving conflicts. */
+  public mergeStash(
+    repository: Repository,
+    stashEntry: IStashEntry,
+    keep: boolean
+  ) {
+    return this.appStore._mergeStashWithLocalChanges(
+      repository,
+      stashEntry,
+      keep
+    )
   }
 
   public renameStash(

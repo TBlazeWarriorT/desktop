@@ -254,6 +254,9 @@ and nothing reaches GitHub.
   one from \`pull/ahead\` shows its branch; one was made with \`git stash\` in a terminal.
 - Click one to see its files. Restore (apply + delete), Apply (keep it), Discard.
 - Right Click a stash: Restore, Apply, Rename…, Discard….
+- "Cheaper heal idea" and the uncommitted \`healer.txt\` edit change the same line:
+  Restore or Apply it to get the dialog. Close does nothing; "Stash changes and
+  continue" swaps them; "Merge with my changes" leaves conflict markers.
 - Stash all changes (Ctrl+Shift+S) asks for an optional name and never replaces
   an older stash. Right Click files > Stash file… stashes only those.
 
