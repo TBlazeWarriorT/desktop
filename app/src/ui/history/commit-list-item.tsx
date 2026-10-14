@@ -50,6 +50,8 @@ interface ICommitProps {
   readonly unpushedIndicatorTitle?: string
   readonly accounts: ReadonlyArray<Account>
   readonly preferAbsoluteDates: boolean
+  /** Where a history search matched, when not in the title. */
+  readonly searchMatch?: string
 }
 
 interface ICommitListItemState {
@@ -180,10 +182,14 @@ export class CommitListItem extends React.PureComponent<
   private renderCommitIndicators() {
     const tagIndicator = renderCommitListItemTags(this.props.commit.tags)
     const unpushedIndicator = this.renderUnpushedIndicator()
+    const { searchMatch } = this.props
 
-    if (tagIndicator || unpushedIndicator) {
+    if (tagIndicator || unpushedIndicator || searchMatch) {
       return (
         <div className="commit-indicators">
+          {searchMatch && (
+            <span className="commit-search-match">{searchMatch}</span>
+          )}
           {tagIndicator}
           {unpushedIndicator}
         </div>

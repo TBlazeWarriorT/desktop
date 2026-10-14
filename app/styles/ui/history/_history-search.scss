@@ -1,0 +1,49 @@
+// Commit search above the History list (app/src/ui/history/history-search.tsx).
+#compare-view {
+  .history-search-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-half);
+
+    .fancy-text-box-component {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .button-component {
+      flex-shrink: 0;
+      padding: 0 var(--spacing-half);
+    }
+
+    // Stays visible while collapsed, so a slower search isn't a surprise.
+    .history-search-options-button.active .octicon {
+      fill: var(--link-button-color);
+    }
+  }
+
+  .history-search-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-half) var(--spacing-double);
+    padding: var(--spacing-half) var(--spacing);
+    background: var(--box-alt-background-color);
+    border-bottom: var(--base-border);
+  }
+
+  .history-search-status {
+    padding: var(--spacing-third) var(--spacing);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+    border-bottom: var(--base-border);
+  }
+
+  .commit-search-match {
+    flex-shrink: 0;
+    margin-right: var(--spacing-half);
+    padding: 0 var(--spacing-half);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-xs);
+    background: var(--box-alt-background-color);
+    color: var(--text-secondary-color);
+  }
+}

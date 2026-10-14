@@ -34,6 +34,7 @@ import { KeyboardInsertionData } from '../lib/list'
 import { Account } from '../../models/account'
 import { Emoji } from '../../lib/emoji'
 import { formatNumber } from '../../lib/format-number'
+import { HistorySearch } from './history-search'
 
 interface ICompareSidebarProps {
   readonly repository: Repository
@@ -73,6 +74,9 @@ interface ICompareSidebarState {
 
   /** Data to be reordered via keyboard */
   readonly keyboardReorderData?: KeyboardInsertionData
+
+  /** The branch compare box replaces the search box until it is closed. */
+  readonly compareOpen: boolean
 }
 
 /** If we're within this many rows from the bottom, load the next history batch. */
@@ -92,7 +96,7 @@ export class CompareSidebar extends React.Component<
   public constructor(props: ICompareSidebarProps) {
     super(props)
 
-    this.state = { focusedBranch: null }
+    this.state = { focusedBranch: null, compareOpen: false }
   }
 
   public componentWillReceiveProps(nextProps: ICompareSidebarProps) {
@@ -128,6 +132,17 @@ export class CompareSidebar extends React.Component<
   public componentDidUpdate(prevProps: ICompareSidebarProps) {
     const { showBranchList } = this.props.compareState
 
+    // Back to the search box once the compare is dismissed.
+    const wasComparing =
+      prevProps.compareState.showBranchList ||
+      prevProps.compareState.formState.kind !== HistoryTabMode.History
+    const isComparing =
+      showBranchList ||
+      this.props.compareState.formState.kind !== HistoryTabMode.History
+    if (this.state.compareOpen && wasComparing && !isComparing) {
+      this.setState({ compareOpen: false })
+    }
+
     if (showBranchList === prevProps.compareState.showBranchList) {
       return
     }
@@ -160,8 +175,28 @@ export class CompareSidebar extends React.Component<
   }
 
   public render() {
-    const { branches, filterText, showBranchList } = this.props.compareState
+    const { branches, filterText, showBranchList, formState } =
+      this.props.compareState
     const placeholderText = getPlaceholderText(this.props.compareState)
+
+    if (
+      !this.state.compareOpen &&
+      !showBranchList &&
+      formState.kind === HistoryTabMode.History
+    ) {
+      return (
+        <div id="compare-view" role="tabpanel" aria-labelledby="history-tab">
+          <HistorySearch
+            repository={this.props.repository}
+            dispatcher={this.props.dispatcher}
+            onCompareClicked={this.onCompareClicked}
+            renderResults={this.renderSearchResults}
+          >
+            {this.renderCommits()}
+          </HistorySearch>
+        </div>
+      )
+    }
 
     return (
       <div id="compare-view" role="tabpanel" aria-labelledby="history-tab">
@@ -185,6 +220,26 @@ export class CompareSidebar extends React.Component<
       </div>
     )
   }
+
+  private onCompareClicked = () => {
+    this.setState({ compareOpen: true })
+    this.props.dispatcher.updateCompareForm(this.props.repository, {
+      showBranchList: true,
+    })
+  }
+
+  private renderSearchResults = (
+    commitSHAs: ReadonlyArray<string>,
+    onScroll: (start: number, end: number) => void,
+    emptyListMessage: string,
+    searchMatches: ReadonlyMap<string, string>
+  ) =>
+    this.renderCommitList({
+      commitSHAs,
+      onScroll,
+      emptyListMessage,
+      searchMatches,
+    })
 
   private onBranchesListRef = (branchList: BranchList | null) => {
     this.branchList = branchList
@@ -215,11 +270,21 @@ export class CompareSidebar extends React.Component<
     })
   }
 
-  private renderCommitList() {
-    const { formState, commitSHAs } = this.props.compareState
+  /** `search` shows history search results: no reordering or squashing. */
+  private renderCommitList(search?: {
+    readonly commitSHAs: ReadonlyArray<string>
+    readonly onScroll: (start: number, end: number) => void
+    readonly emptyListMessage: string
+    readonly searchMatches: ReadonlyMap<string, string>
+  }) {
+    const { formState } = this.props.compareState
+    const commitSHAs = search?.commitSHAs ?? this.props.compareState.commitSHAs
+    const canReorder = formState.kind === HistoryTabMode.History && !search
 
     let emptyListMessage: string | JSX.Element
-    if (formState.kind === HistoryTabMode.History) {
+    if (search !== undefined) {
+      emptyListMessage = search.emptyListMessage
+    } else if (formState.kind === HistoryTabMode.History) {
       emptyListMessage = 'No history'
     } else {
       const currentlyComparedBranchName = formState.comparisonBranch.name
@@ -248,11 +313,11 @@ export class CompareSidebar extends React.Component<
         selectedSHAs={this.props.selectedCommitShas}
         shasToHighlight={this.props.shasToHighlight}
         localCommitSHAs={this.props.localCommitSHAs}
-        canResetToCommits={formState.kind === HistoryTabMode.History}
+        canResetToCommits={formState.kind === HistoryTabMode.History && !search}
         canUndoCommits={formState.kind === HistoryTabMode.History}
         canAmendCommits={formState.kind === HistoryTabMode.History}
         emoji={this.props.emoji}
-        reorderingEnabled={formState.kind === HistoryTabMode.History}
+        reorderingEnabled={canReorder}
         onViewCommitOnGitHub={this.props.onViewCommitOnGitHub}
         onUndoCommit={this.onUndoCommit}
         onResetToCommit={this.onResetToCommit}
@@ -263,7 +328,7 @@ export class CompareSidebar extends React.Component<
         }
         onAmendCommit={this.props.onAmendCommit}
         onCommitsSelected={this.onCommitsSelected}
-        onScroll={this.onScroll}
+        onScroll={search?.onScroll ?? this.onScroll}
         onCreateBranch={this.onCreateBranch}
         onCheckoutCommit={this.onCheckoutCommit}
         onCreateTag={this.onCreateTag}
@@ -274,19 +339,22 @@ export class CompareSidebar extends React.Component<
         onCancelKeyboardReorder={this.onCancelKeyboardReorder}
         onSquash={this.onSquash}
         emptyListMessage={emptyListMessage}
-        onCompareListScrolled={this.props.onCompareListScrolled}
-        compareListScrollTop={this.props.compareListScrollTop}
+        onCompareListScrolled={
+          search ? undefined : this.props.onCompareListScrolled
+        }
+        compareListScrollTop={search ? 0 : this.props.compareListScrollTop}
         tagsToPush={this.props.tagsToPush ?? []}
         onRenderCommitDragElement={this.onRenderCommitDragElement}
         onRemoveCommitDragElement={this.onRemoveCommitDragElement}
-        disableReordering={formState.kind === HistoryTabMode.Compare}
-        disableSquashing={formState.kind === HistoryTabMode.Compare}
+        disableReordering={!canReorder}
+        disableSquashing={!canReorder}
         isMultiCommitOperationInProgress={
           this.props.isMultiCommitOperationInProgress
         }
         keyboardReorderData={this.state.keyboardReorderData}
         accounts={this.props.accounts}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
+        searchMatches={search?.searchMatches}
       />
     )
   }

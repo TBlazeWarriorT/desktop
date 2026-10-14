@@ -9071,6 +9071,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return created === true
   }
 
+  /** Adds commits found by a search to the lookup. See `Dispatcher`. */
+  public _addCommitsToLookup(
+    repository: Repository,
+    commits: ReadonlyArray<Commit>
+  ) {
+    this.gitStoreCache.get(repository).addCommitsToLookup(commits)
+  }
+
   /** Shows any stash in the stash view. See `Dispatcher`. */
   public async _showStashEntry(repository: Repository, stash: IStashEntry) {
     const gitStore = this.gitStoreCache.get(repository)

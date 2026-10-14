@@ -2880,6 +2880,14 @@ export class Dispatcher {
     return this.appStore._createStash(repository, title, files)
   }
 
+  /** Make commits found by a history search selectable. */
+  public addCommitsToLookup(
+    repository: Repository,
+    commits: ReadonlyArray<Commit>
+  ) {
+    return this.appStore._addCommitsToLookup(repository, commits)
+  }
+
   /** Show any stash, from any branch, in the stash view. */
   public showStash(repository: Repository, stashEntry: IStashEntry) {
     return this.appStore._showStashEntry(repository, stashEntry)

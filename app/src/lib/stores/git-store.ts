@@ -671,6 +671,12 @@ export class GitStore extends BaseStore {
     return this._localCommitSHAs
   }
 
+  /** Makes commits found outside the loaded history selectable. */
+  public addCommitsToLookup(commits: ReadonlyArray<Commit>) {
+    this.storeCommits(commits)
+    this.emitUpdate()
+  }
+
   /** Store the given commits. */
   private storeCommits(commits: ReadonlyArray<Commit>) {
     for (const commit of commits) {

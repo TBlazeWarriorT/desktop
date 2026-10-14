@@ -182,6 +182,9 @@ interface ICommitListProps {
 
   readonly preferAbsoluteDates: boolean
 
+  /** Search results: where the query matched, shown next to each commit. */
+  readonly searchMatches?: ReadonlyMap<string, string>
+
   /** This will make the list semantics friendly to screen reader users in browse mode. */
   readonly isInformationalView?: boolean
 }
@@ -311,6 +314,7 @@ export class CommitList extends React.Component<
         disableSquashing={this.props.disableSquashing}
         accounts={this.props.accounts}
         preferAbsoluteDates={this.props.preferAbsoluteDates}
+        searchMatch={this.props.searchMatches?.get(commit.sha)}
       />
     )
   }

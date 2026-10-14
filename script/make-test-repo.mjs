@@ -260,6 +260,20 @@ and nothing reaches GitHub.
 - Stash all changes (Ctrl+Shift+S) asks for an optional name and never replaces
   an older stash. Right Click files > Stash file… stashes only those.
 
+## History search
+
+The search box above the History list; the ⇄ button next to it opens the old
+"compare to branch" picker.
+
+| Search | Expected |
+| --- | --- |
+| \`heal\` | titles: Lower/Raise/Change the heal price… |
+| \`potions restore\` | "Add item db with scripts", tagged *in description* |
+| \`test-bot\` | every commit, tagged *by author* |
+| first 7 characters of any commit's SHA | that commit first |
+| \`getvariableofinstance\` with *Search code changes* | "Add global functions and the Begi instance", *in code* |
+| \`Raise the heal price\` with *All branches* | the remote-only commits of the pull/* branches |
+
 ## Branches and pulling without switching
 
 Open the branch dropdown: each branch shows ↓behind ↑ahead of \`origin\`.
@@ -332,7 +346,10 @@ commit('Add global functions and the Begi instance', {
   'npc/other/functions.txt': functions,
   'npc/custom/instances/begi.cpp': instance,
 })
-commit('Add item db with scripts', { 'db/re/item_db.yml': itemDb('45,65') })
+commit(
+  'Add item db with scripts\n\nRed potions restore between 45 and 65 HP.',
+  { 'db/re/item_db.yml': itemDb('45,65') }
+)
 commit('Add leftover script', { 'npc/custom/leftover.txt': leftoverClean })
 git('push', '-q', '-u', 'origin', 'main')
 
