@@ -16,9 +16,10 @@ export function updateStartMenuShortcut() {
     'Programs'
   )
   try {
-    shell.writeShortcutLink(
+    const written = shell.writeShortcutLink(
       Path.join(programs, `${app.getName()}.lnk`),
-      'replace',
+      // 'replace' fails when there's no shortcut yet; 'create' also overwrites.
+      'create',
       {
         target: process.execPath,
         cwd: Path.dirname(process.execPath),
@@ -28,6 +29,10 @@ export function updateStartMenuShortcut() {
         description: app.getName(),
       }
     )
+    // It reports failure by returning false, not by throwing.
+    if (!written) {
+      log.warn('Could not write the Start menu shortcut')
+    }
   } catch (e) {
     log.warn('Could not update the Start menu shortcut', e)
   }

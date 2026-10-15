@@ -265,8 +265,9 @@ async function packageApp() {
     // Windows
     win32metadata: {
       CompanyName: getCompanyName(),
-      FileDescription: '',
-      OriginalFilename: '',
+      // Taskbar pins and Task Manager show this; empty leaves Electron's.
+      FileDescription: getProductName(),
+      OriginalFilename: `${getExecutableName()}.exe`,
       ProductName: getProductName(),
       InternalName: getProductName(),
     },
