@@ -1,4 +1,5 @@
 import { StatsDatabase, ILaunchStats, IDailyMeasures } from './stats-database'
+import { phonesHome } from '../fork'
 import { getVersion } from '../../ui/lib/app-proxy'
 import { hasShownWelcomeFlow } from '../welcome'
 import {
@@ -646,6 +647,9 @@ export function buildStatsPayload(body: StatsPayload): ITelemetryPayload {
 }
 
 const defaultPostImplementation = (body: StatsPayload) => {
+  if (!phonesHome) {
+    return Promise.resolve(new Response(null, { status: 204 }))
+  }
   if (enableNewStatsEndpoint()) {
     return fetch(StatsEndpoint, {
       method: 'POST',

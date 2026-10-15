@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { phonesHome } from '../lib/fork'
 import * as Path from 'path'
 
 import { TransitionGroup, CSSTransition } from 'react-transition-group'
@@ -668,7 +669,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     inBackground: boolean,
     skipGuidCheck: boolean = false
   ) {
-    if (__LINUX__ || __RELEASE_CHANNEL__ === 'development') {
+    if (__LINUX__ || __RELEASE_CHANNEL__ === 'development' || !phonesHome) {
       return
     }
 

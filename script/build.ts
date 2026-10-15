@@ -46,6 +46,7 @@ import { isGitHubActions } from './build-platforms'
 import {
   getChannel,
   getDistArchitecture,
+  getDistPath,
   getDistRoot,
   getExecutableName,
   getIconDirectory,
@@ -81,7 +82,8 @@ const outRoot = path.join(projectRoot, 'out')
 console.log(`Building for ${getChannel()}…`)
 
 console.log('Removing old distribution…')
-rmSync(getDistRoot(), { recursive: true, force: true })
+// Only this build's folder: dev and Blazium builds live side by side in dist.
+rmSync(getDistPath(), { recursive: true, force: true })
 
 console.log('Copying dependencies…')
 copyDependencies()
@@ -205,10 +207,15 @@ async function packageApp() {
     out: getDistRoot(),
     // Packager probes for a sibling .icon file and requires macOS 26 to compile
     // it. Use a distinct basename so older build hosts use the prebuilt ICNS.
-    icon: join(
-      iconPath,
-      process.platform === 'darwin' ? 'icon-logo-legacy.icns' : 'icon-logo'
-    ),
+    icon:
+      process.platform === 'win32' && !isDevelopmentBuild
+        ? join(projectRoot, 'app', 'static', 'logos', 'blazium', 'icon-logo')
+        : join(
+            iconPath,
+            process.platform === 'darwin'
+              ? 'icon-logo-legacy.icns'
+              : 'icon-logo'
+          ),
     extraResource: [assetsCarPath],
     dir: outRoot,
     overwrite: true,

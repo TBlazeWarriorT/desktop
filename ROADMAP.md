@@ -108,5 +108,10 @@ notes are in `AGENTS.md`.
 
 ## Distributing to the team
 
-- [ ] Production build with its own name and ID, installable next to the official Desktop.
-- [ ] Auto-update from the fork's Releases (or disabled), and telemetry disabled.
+- [x] Production build with its own name and ID next to the official Desktop: GitHub
+      Desktop Blazium (`blazium-build.bat`; own data folder, app ID, exe and icon;
+      adds itself to the Start menu).
+      - [ ] An installer (today it runs from `dist/`), and its own OAuth app (see Known
+            issues).
+- [x] Telemetry and update checks disabled (`app/src/lib/fork.ts`).
+      - [ ] Auto-update from the fork's Releases.

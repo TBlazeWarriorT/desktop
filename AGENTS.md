@@ -15,6 +15,11 @@ keep it updated when something lands.
 - Open the app only through `dev-start.bat` (or its desktop shortcut). The dev exe in
   `dist/` loads the renderer from the webpack server on port 3100 and shows a white
   screen when opened directly.
+- The standalone build for daily use is GitHub Desktop Blazium: `blazium-build.bat`
+  runs `build:prod` into `dist/GitHubDesktopBlazium-win32-x64` (only that folder is
+  replaced, the dev build stays). Production builds of this fork always get that name,
+  app ID and icon (`app/package-info.ts`, `app/static/logos/blazium`), so their data
+  lives in `%APPDATA%\GitHub Desktop Blazium`, apart from the official app and dev.
 - Port 3000 is always taken by the Gear-Mechanica-Client vite server. Never use it.
 - `dev-start.bat` runs `yarn start`, which watches every bundle into `dist/`. A full
   `build:dev` happens on its own only when `script/dev-build-stamp.mjs` sees dependencies,

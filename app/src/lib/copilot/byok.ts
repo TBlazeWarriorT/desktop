@@ -1,3 +1,4 @@
+import { credentialAppName } from '../fork'
 import { isIPv4 } from 'net'
 import { TokenStore } from '../stores/token-store'
 import type { ReasoningEffort } from '../stores/copilot-store'
@@ -61,9 +62,7 @@ export interface IBYOKProvider {
 }
 
 const ProvidersStorageKey = 'copilot-byok-providers'
-const TokenStoreKey = `${
-  __DEV__ ? 'GitHub Desktop Dev' : 'GitHub Desktop'
-} - Copilot BYOK provider`
+const TokenStoreKey = `${credentialAppName} - Copilot BYOK provider`
 
 /**
  * Loads the list of BYOK providers from local storage. Returns an empty list

@@ -1,5 +1,7 @@
 import '../lib/logging/main/install'
 
+import { BlaziumAppUserModelId } from '../lib/fork'
+import { updateStartMenuShortcut } from './start-menu-shortcut'
 import {
   app,
   Menu,
@@ -122,6 +124,9 @@ if (__DARWIN__) {
 // we'll want to set the right App User Model ID from production builds.
 if (__WIN32__ && __DEV__) {
   app.setAppUserModelId('com.squirrel.GitHubDesktop.GitHubDesktop')
+} else if (__WIN32__) {
+  app.setAppUserModelId(BlaziumAppUserModelId)
+  updateStartMenuShortcut()
 }
 
 app.on('window-all-closed', () => {

@@ -95,7 +95,10 @@ export function getWindowsDeltaNugetPackagePath() {
 }
 
 export function getWindowsIdentifierName() {
-  return 'GitHubDesktop'
+  // Production builds of this fork are GitHub Desktop Blazium.
+  return process.env.NODE_ENV === 'development'
+    ? 'GitHubDesktop'
+    : 'GitHubDesktopBlazium'
 }
 
 export function getBundleSizes() {
