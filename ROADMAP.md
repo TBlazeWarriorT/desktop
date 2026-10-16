@@ -91,12 +91,13 @@ notes are in `AGENTS.md`.
 
 - [x] Labels where they are used: after goto/callsub/jump_zero, menu's label slots,
       cmdothernpc's command and "Npc::OnEvent" strings (by position, not checked).
-- [x] `doc/sample/` scripts, `.conf` files (conf and npc), the command reference
-      (`script_commands.txt`, `mapflags.txt`...; examples as script), and tabs drawn as
-      arrows in every rAthena file.
-- [ ] **Override (phase 3):** a "Syntax" dropdown next to Diff Options (Auto / rAthena /
-      rAthena YAML / Plain text / others), with "remember for this path in this repo" and
-      showing the active source (e.g. "rAthena · Gear-Mechanica-Server · 753 cmds").
+- [x] `doc/sample/` scripts, `.conf` files (conf and npc), every other `doc/*.txt`
+      (`*command` entries, examples as script), and tabs drawn as arrows in every rAthena
+      file. Also `.bat`/`.cmd`, `.sln`, `.psm1`/`.psd1` and `.vcxproj.filters`.
+- [x] **Override (phase 3):** "Syntax: Auto" next to Diff Options and in the Files tab
+      header: Auto / the four rAthena modes / Plain text / Other languages, remembered for
+      the path in the repo (`lib/syntax-override.ts`); the menu shows the active source
+      ("rAthena · Gear-Mechanica-Server · 753 commands").
 - [ ] Single-line `Script: "..."` in YAML (only `|` and `>` blocks are handled today).
 - [ ] Tooltip with the command's docs (from `doc/script_commands.txt`).
 - [ ] Flag unknown commands and `callfunc "F_X"` targets that don't exist.

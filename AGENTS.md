@@ -48,9 +48,10 @@ keep it updated when something lands.
 - Detection is deliberately strict, and only in a repo with `npc/`: scripts are `.txt`/
   `.cpp` under `npc/` or `doc/sample/` that contain an NPC header line (the team names
   scripts `.cpp`); `.yml` with `*Script: |`/`>` blocks; `.conf` files (`rathena-conf`);
-  and `doc/*.txt` with at least ten `*command` entries, like `script_commands.txt`
-  (`rathena-doc`, tab-indented examples as script). The rest of `doc/` stays plain.
-  These modes are in `rathena-files.ts`, which also draws tabs as arrows.
+  and every other `doc/*.txt` (`rathena-doc`: comments, titles, numbers, `*command`
+  entries and tab-indented examples as script; prose stays plain). These modes are
+  in `rathena-files.ts`, which also draws tabs as arrows. `extra-modes.ts` has the
+  modes CodeMirror 5 lacks (batch files, VS solutions).
 - Commands and constants come from the repo's server source, found via `.rathena.json`
   `source`, the repo itself, or the `map-server.exe` symlink (how
   Gear-Mechanica-Server-Ferrus points to Gear-Mechanica-Server). A found source

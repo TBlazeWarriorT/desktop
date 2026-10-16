@@ -1,5 +1,6 @@
 import * as React from 'react'
 
+import { onSyntaxOverrideChanged } from '../../lib/syntax-override'
 import {
   ITextDiff,
   DiffLineType,
@@ -231,6 +232,7 @@ export class SideBySideDiff extends React.Component<
   ISideBySideDiffProps,
   ISideBySideDiffState
 > {
+  private unsubscribeSyntax: (() => void) | null = null
   private virtualListRef = React.createRef<List>()
   private diffContainer: HTMLDivElement | null = null
 
@@ -275,6 +277,10 @@ export class SideBySideDiff extends React.Component<
 
   public componentDidMount() {
     this.initDiffSyntaxMode()
+    // Re-highlight when a syntax is picked in the Syntax menu.
+    this.unsubscribeSyntax = onSyntaxOverrideChanged(() =>
+      this.initDiffSyntaxMode()
+    )
 
     window.addEventListener('keydown', this.onWindowKeyDown)
 
@@ -413,6 +419,7 @@ export class SideBySideDiff extends React.Component<
   }
 
   public componentWillUnmount() {
+    this.unsubscribeSyntax?.()
     window.removeEventListener('keydown', this.onWindowKeyDown)
     document.removeEventListener('mouseup', this.onEndSelection)
     document.removeEventListener('find-text', this.showSearch)

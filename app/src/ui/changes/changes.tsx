@@ -150,6 +150,7 @@ export class Changes extends React.Component<IChangesProps, IChangesState> {
     return (
       <div className="diff-container">
         <DiffHeader
+          repositoryPath={this.props.repository.path}
           path={this.props.file.path}
           status={this.props.file.status}
           diff={this.props.diff}

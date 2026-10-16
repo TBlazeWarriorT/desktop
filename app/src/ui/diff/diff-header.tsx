@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { SyntaxSelect } from './syntax-select'
 import { PathLabel } from '../lib/path-label'
 import { AppFileStatus } from '../../models/status'
 import { IDiff, DiffType } from '../../models/diff'
@@ -65,6 +66,9 @@ interface IDiffHeaderProps {
   /** Whether the file is shown whole instead of as a diff. */
   readonly wholeFile?: boolean
   readonly onWholeFileChanged?: (wholeFile: boolean) => void
+
+  /** Shows the Syntax menu (see SyntaxSelect) for this repository's file. */
+  readonly repositoryPath?: string
 }
 
 /** Displays information about a file */
@@ -78,6 +82,12 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
         <PathLabel path={this.props.path} status={this.props.status} />
 
         {this.renderViewModes()}
+        {this.props.repositoryPath !== undefined && (
+          <SyntaxSelect
+            repositoryPath={this.props.repositoryPath}
+            path={this.props.path}
+          />
+        )}
         {this.renderDiffOptions()}
 
         <Octicon

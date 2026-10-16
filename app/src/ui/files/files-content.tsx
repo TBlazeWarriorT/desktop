@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { SyntaxSelect } from '../diff/syntax-select'
 import { Repository } from '../../models/repository'
 import { Emoji } from '../../lib/emoji'
 import { FileView } from '../diff/file-view'
@@ -70,6 +71,7 @@ export class FilesContent extends React.Component<
       <div className="files-content">
         <div className="files-content-header">
           <PathText path={path} />
+          <SyntaxSelect repositoryPath={repository.path} path={path} />
           {markdown && (
             <ViewModeSwitcher
               modes={filesViewModes}

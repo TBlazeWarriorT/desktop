@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { onSyntaxOverrideChanged } from '../../lib/syntax-override'
 import {
   EditorState,
   Extension,
@@ -145,6 +146,7 @@ export class CodeEditor extends React.Component<
 > {
   private view: EditorView | null = null
   private highlightTimer: number | null = null
+  private unsubscribeSyntax: (() => void) | null = null
 
   public constructor(props: ICodeEditorProps) {
     super(props)
@@ -172,7 +174,14 @@ export class CodeEditor extends React.Component<
     }
   }
 
+  public componentDidMount() {
+    this.unsubscribeSyntax = onSyntaxOverrideChanged(() =>
+      this.scheduleHighlight(0)
+    )
+  }
+
   public componentWillUnmount() {
+    this.unsubscribeSyntax?.()
     if (this.highlightTimer !== null) {
       window.clearTimeout(this.highlightTimer)
     }

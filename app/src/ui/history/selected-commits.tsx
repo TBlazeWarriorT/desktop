@@ -248,6 +248,7 @@ export class SelectedCommits extends React.Component<
 
     return (
       <DiffHeader
+        repositoryPath={this.props.repository.path}
         diff={this.props.currentDiff}
         path={path}
         status={status}

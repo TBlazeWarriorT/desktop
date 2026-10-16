@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { onSyntaxOverrideChanged } from '../../lib/syntax-override'
 import { Repository } from '../../models/repository'
 import { ITokens } from '../../lib/highlighter/types'
 import {
@@ -28,6 +29,7 @@ interface IFileViewState {
 /** A file in full, read-only, with syntax highlighting and line numbers. */
 export class FileView extends React.Component<IFileViewProps, IFileViewState> {
   private loadId = 0
+  private unsubscribeSyntax: (() => void) | null = null
   private readonly linesRef = React.createRef<WholeFileLines>()
   /** The shown lines got their tokens; a reload of the same text can stop. */
   private highlighted = false
@@ -39,6 +41,11 @@ export class FileView extends React.Component<IFileViewProps, IFileViewState> {
 
   public componentDidMount() {
     this.load(false)
+    this.unsubscribeSyntax = onSyntaxOverrideChanged(() => this.load(false))
+  }
+
+  public componentWillUnmount() {
+    this.unsubscribeSyntax?.()
   }
 
   /** The first line on screen, to keep the place elsewhere. */

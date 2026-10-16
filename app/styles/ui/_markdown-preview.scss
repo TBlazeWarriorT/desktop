@@ -44,3 +44,13 @@
     }
   }
 }
+
+// "Syntax: Auto" (app/src/ui/diff/syntax-select.tsx), before Diff Options.
+.syntax-select {
+  flex-shrink: 0;
+  margin-right: var(--spacing-half);
+
+  .octicon {
+    margin-left: var(--spacing-third);
+  }
+}

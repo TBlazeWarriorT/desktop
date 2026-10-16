@@ -15,7 +15,7 @@ import {
   hasEmbeddedScripts,
   IRathenaModeOptions,
 } from './rathena'
-import { looksLikeCommandDoc, markTabs } from './rathena-files'
+import { markTabs } from './rathena-files'
 
 /**
  * A mode definition object is used to map a certain file
@@ -135,6 +135,7 @@ const extensionModes: ReadonlyArray<IModeDefinition> = [
       '.svg': 'text/xml',
       '.resx': 'text/xml',
       '.props': 'text/xml',
+      '.filters': 'text/xml',
       '.targets': 'text/xml',
     },
   },
@@ -269,6 +270,19 @@ const extensionModes: ReadonlyArray<IModeDefinition> = [
     install: () => import('codemirror/mode/powershell/powershell'),
     mappings: {
       '.ps1': 'application/x-powershell',
+      '.psm1': 'application/x-powershell',
+      '.psd1': 'application/x-powershell',
+    },
+  },
+  // Not in CodeMirror 5; written for this fork.
+  {
+    install: async () => {
+      await import('./extra-modes')
+    },
+    mappings: {
+      '.bat': 'text/x-batch',
+      '.cmd': 'text/x-batch',
+      '.sln': 'text/x-vs-solution',
     },
   },
   {
@@ -565,11 +579,9 @@ function getRathenaModeName(request: IHighlightRequest) {
   if (ext === '.conf') {
     return 'rathena-conf'
   }
-  if (
-    /^doc\//i.test(path) &&
-    ext === '.txt' &&
-    looksLikeCommandDoc(request.contentLines)
-  ) {
+  // Every other doc/ text: the mode only colors comments, titles, numbers,
+  // `*command` entries and tab-indented examples, so prose stays plain.
+  if (/^doc\//i.test(path) && ext === '.txt') {
     return 'rathena-doc'
   }
   if (
@@ -584,16 +596,27 @@ function getRathenaModeName(request: IHighlightRequest) {
 async function detectMode(
   request: IHighlightRequest
 ): Promise<CodeMirror.Mode<{}> | null> {
-  const rathenaMode = getRathenaModeName(request)
+  // A syntax picked by hand skips detection.
+  const { syntax } = request
+  if (syntax === 'plain') {
+    return null
+  }
+  const rathenaMode =
+    syntax === undefined
+      ? getRathenaModeName(request)
+      : syntax.startsWith('rathena')
+      ? syntax
+      : null
   if (rathenaMode !== null) {
-    const ctx = request.rathena!
+    // Picked by hand outside an rAthena server: rathena master's commands.
+    const ctx = request.rathena
     const options: IRathenaModeOptions = {
       definitions:
-        ctx.definitions ??
+        ctx?.definitions ??
         (await import('../lib/rathena/baseline.json')).default,
-      extra: ctx.extra,
-      globalFunctions: ctx.globalFunctions,
-      key: ctx.key,
+      extra: ctx?.extra ?? {},
+      globalFunctions: ctx?.globalFunctions ?? [],
+      key: ctx?.key ?? 'baseline',
     }
     if (rathenaMode === 'rathena-yaml') {
       await import('codemirror/mode/yaml/yaml')
@@ -602,9 +625,10 @@ async function detectMode(
   }
 
   const mimeType =
-    extensionMIMEMap.get(request.extension.toLowerCase()) ||
-    basenameMIMEMap.get(request.basename.toLowerCase()) ||
-    guessMimeType(request.contentLines)
+    syntax ??
+    (extensionMIMEMap.get(request.extension.toLowerCase()) ||
+      basenameMIMEMap.get(request.basename.toLowerCase()) ||
+      guessMimeType(request.contentLines))
 
   if (!mimeType) {
     return null

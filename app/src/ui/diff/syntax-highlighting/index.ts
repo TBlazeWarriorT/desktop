@@ -1,5 +1,6 @@
 import * as Path from 'path'
 
+import { getSyntaxOverride } from '../../../lib/syntax-override'
 import { assertNever } from '../../../lib/fatal-error'
 
 import { getPartialBlobContents } from '../../../lib/git/show'
@@ -42,6 +43,8 @@ export interface IFileContents {
   readonly canBeExpanded: boolean
   /** Set when the repository is an rAthena server. */
   readonly rathena?: IRathenaHighlightContext
+  /** Where syntax overrides are looked up (see lib/syntax-override.ts). */
+  readonly repositoryPath?: string
 }
 
 interface IFileTokens {
@@ -128,6 +131,7 @@ export async function getFileContents(
   return {
     file,
     rathena,
+    repositoryPath: repo.path,
     oldContents: oldContents?.toString('utf8').split(/\r?\n/) ?? [],
     newContents: newContents?.toString('utf8').split(/\r?\n/) ?? [],
     canBeExpanded:
@@ -186,6 +190,11 @@ export function getLineFilters(hunks: ReadonlyArray<DiffHunk>): ILineFilters {
   return { oldLineFilter, newLineFilter }
 }
 
+const syntaxFor = (contents: IFileContents, path: string) =>
+  contents.repositoryPath === undefined
+    ? undefined
+    : getSyntaxOverride(contents.repositoryPath, path)
+
 export async function highlightContents(
   contents: IFileContents,
   tabSize: number,
@@ -204,7 +213,11 @@ export async function highlightContents(
           Path.extname(oldPath),
           tabSize,
           lineFilters.oldLineFilter,
-          { path: oldPath, rathena: contents.rathena }
+          {
+            path: oldPath,
+            rathena: contents.rathena,
+            syntax: syntaxFor(contents, oldPath),
+          }
         ).catch(e => {
           log.error('Highlighter worked failed for old contents', e)
           return {}
@@ -217,7 +230,11 @@ export async function highlightContents(
           Path.extname(file.path),
           tabSize,
           lineFilters.newLineFilter,
-          { path: file.path, rathena: contents.rathena }
+          {
+            path: file.path,
+            rathena: contents.rathena,
+            syntax: syntaxFor(contents, file.path),
+          }
         ).catch(e => {
           log.error('Highlighter worked failed for new contents', e)
           return {}

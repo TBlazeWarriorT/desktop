@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { getSyntaxOverride } from '../../lib/syntax-override'
 import * as Path from 'path'
 import classNames from 'classnames'
 import {
@@ -81,7 +82,11 @@ export async function highlightWholeFile(
     Path.extname(path),
     4,
     lines.map((_, i) => i),
-    { path, rathena: rathena ?? undefined }
+    {
+      path,
+      rathena: rathena ?? undefined,
+      syntax: getSyntaxOverride(repository.path, path),
+    }
   ).catch(e => {
     log.error('Highlighter failed for a whole file', e)
     return {}

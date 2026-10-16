@@ -86,4 +86,10 @@ export interface IHighlightRequest {
 
   /** Set when the repository looks like an rAthena server. */
   readonly rathena?: IRathenaHighlightContext
+
+  /**
+   * Picked by hand instead of detecting: 'plain', an rAthena mode name or a
+   * CodeMirror MIME type (see lib/syntax-override.ts).
+   */
+  readonly syntax?: string
 }

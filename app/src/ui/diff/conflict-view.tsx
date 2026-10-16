@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { onSyntaxOverrideChanged } from '../../lib/syntax-override'
 import classNames from 'classnames'
 import { Repository } from '../../models/repository'
 import { WorkingDirectoryFileChange } from '../../models/status'
@@ -61,6 +62,7 @@ export class ConflictView extends React.Component<
 > {
   private readonly linesRef = React.createRef<WholeFileLines>()
   private loadId = 0
+  private unsubscribeSyntax: (() => void) | null = null
   /** The shown lines got their tokens; a reload of the same text can stop. */
   private highlighted = false
 
@@ -79,6 +81,14 @@ export class ConflictView extends React.Component<
 
   public componentDidMount() {
     this.load(true)
+    this.unsubscribeSyntax = onSyntaxOverrideChanged(() => {
+      this.highlighted = false
+      this.load(false)
+    })
+  }
+
+  public componentWillUnmount() {
+    this.unsubscribeSyntax?.()
   }
 
   public componentDidUpdate(prevProps: IConflictViewProps) {

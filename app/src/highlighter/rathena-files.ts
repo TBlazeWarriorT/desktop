@@ -9,7 +9,8 @@ import { IRathenaModeOptions } from './rathena'
 
 const confDirectives = new Set(['import', 'npc', 'delnpc', 'include'])
 const confBools = /^(yes|no|on|off|true|false)\b/i
-const numberRe = /^-?(0x[\da-f]+|\d+(\.\d+)?)\b/i
+// Any number of dots: IPs (26.254.217.21) and versions are numbers too.
+const numberRe = /^-?(0x[\da-f]+|\d+(\.\d+)*)\b/i
 
 interface IConfState {
   inBlockComment: boolean
@@ -73,17 +74,6 @@ defineMode('rathena-conf', () => ({
 
 /** The command reference format: `*command <args>;` entries. */
 const commandEntryRe = /^\*{1,2}[A-Za-z_]/
-
-/** doc/script_commands.txt and similar references (not doc/sample). */
-export function looksLikeCommandDoc(lines: ReadonlyArray<string>) {
-  let entries = 0
-  for (const line of lines) {
-    if (/^\*[A-Za-z_]\w*/.test(line) && ++entries >= 10) {
-      return true
-    }
-  }
-  return false
-}
 
 interface IDocState {
   inBlockComment: boolean
