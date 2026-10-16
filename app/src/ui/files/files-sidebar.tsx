@@ -31,7 +31,8 @@ interface IFilesSidebarProps {
   readonly reloadKey: unknown
   readonly currentBranchName: string | null
   readonly externalEditorLabel?: string
-  readonly onOpenInExternalEditor: (fullPath: string) => void
+  /** Repository-relative path; see files-context-menu.ts. */
+  readonly onOpenInExternalEditor: (path: string) => void
 }
 
 interface IRow extends IFileTreeRow {

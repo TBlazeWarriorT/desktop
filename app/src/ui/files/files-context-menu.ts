@@ -24,7 +24,11 @@ export interface IFilesMenuContext {
   /** For "View on GitHub" while browsing the working directory. */
   readonly currentBranchName: string | null
   readonly externalEditorLabel?: string
-  readonly onOpenInExternalEditor: (fullPath: string) => void
+  /**
+   * Takes the repository-relative path: the app joins it to the repository's
+   * (despite upstream naming this prop `fullPath`).
+   */
+  readonly onOpenInExternalEditor: (path: string) => void
 }
 
 /** Right Click on a file or folder in the Files tab. */
@@ -53,7 +57,7 @@ export async function showFilesContextMenu(
           (ctx.externalEditorLabel
             ? `Open in ${ctx.externalEditorLabel}`
             : DefaultEditorLabel) + current,
-        action: () => ctx.onOpenInExternalEditor(fullPath),
+        action: () => ctx.onOpenInExternalEditor(path),
         enabled: onDisk,
       },
       {
