@@ -1041,3 +1041,40 @@
     }
   }
 }
+
+// Hovering an rAthena command shows its script_commands.txt entry
+// (app/src/ui/diff/rathena-command-tooltip.tsx).
+.rathena-command-tooltip {
+  position: fixed;
+  z-index: var(--tooltip-z-index);
+  max-width: 560px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--spacing-half) var(--spacing);
+  border: var(--base-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--base-box-shadow);
+  background: var(--background-color);
+  color: var(--text-color);
+  font-size: var(--font-size-sm);
+  user-select: text;
+
+  .rathena-command-signature {
+    font-family: var(--font-family-monospace);
+    font-weight: 600;
+    color: var(--rathena-command-color);
+    white-space: pre-wrap;
+  }
+
+  .rathena-command-body {
+    margin-top: var(--spacing-half);
+    white-space: pre-wrap;
+    tab-size: 4;
+  }
+
+  .rathena-command-more {
+    margin-top: var(--spacing-half);
+    color: var(--text-secondary-color);
+    font-style: italic;
+  }
+}

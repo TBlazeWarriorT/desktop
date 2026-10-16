@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { RathenaCommandTooltip } from './diff/rathena-command-tooltip'
 import { Repository } from '../models/repository'
 import { Commit, CommitOneLine } from '../models/commit'
 import { TipState } from '../models/tip'
@@ -699,6 +700,7 @@ export class RepositoryView extends React.Component<
         {this.renderSidebar()}
         {this.renderContent()}
         {this.maybeRenderTutorialPanel()}
+        <RathenaCommandTooltip repositoryPath={this.props.repository.path} />
       </UiView>
     )
   }

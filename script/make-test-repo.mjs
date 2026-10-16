@@ -244,6 +244,8 @@ and nothing reaches GitHub.
 - \`conf/battle/player.conf\` and \`npc/scripts_custom.conf\`: keys, \`npc:\`/\`import:\`,
   numbers, yes/no and comments.
 - Tabs show as faint arrows in every rAthena file (scripts, YAML scripts, conf, doc).
+- Hover \`mes\` in \`npc/custom/healer.txt\` (diff, File, editor): after a moment its
+  \`doc/script_commands.txt\` entry shows up; commands without an entry show nothing.
 - \`doc/notes.txt\` and \`src/notes.txt\` must stay plain. Their **Syntax: Auto** menu (next to
   Diff Options, or in the Files tab) shows the source line; pick rAthena script and
   \`doc/notes.txt\` gets colored, also after reopening it; Auto puts it back.

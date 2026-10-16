@@ -99,7 +99,9 @@ notes are in `AGENTS.md`.
       the path in the repo (`lib/syntax-override.ts`); the menu shows the active source
       ("rAthena · Gear-Mechanica-Server · 753 commands").
 - [ ] Single-line `Script: "..."` in YAML (only `|` and `>` blocks are handled today).
-- [ ] Tooltip with the command's docs (from `doc/script_commands.txt`).
+- [x] Tooltip with the command's docs: hovering a command (diff, whole file, editor)
+      shows its `doc/script_commands.txt` entry from the active source
+      (`lib/rathena/command-docs.ts`).
 - [ ] Flag unknown commands and `callfunc "F_X"` targets that don't exist.
 
 ## Known issues
