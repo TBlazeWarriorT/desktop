@@ -2,7 +2,6 @@ import * as React from 'react'
 import { ICommandDoc, getCommandDocs } from '../../lib/rathena/command-docs'
 
 const ShowDelayMs = 450
-const MaxBodyLines = 18
 
 interface IRathenaCommandTooltipProps {
   readonly repositoryPath: string
@@ -115,8 +114,8 @@ export class RathenaCommandTooltip extends React.Component<
       return null
     }
     const { doc, anchor } = shown
-    const lines = doc.body.split('\n')
-    const body = lines.slice(0, MaxBodyLines).join('\n')
+    // The whole entry, never cut: long ones (if, menu) scroll inside.
+    const body = doc.body
     // Below the command, or above it near the bottom of the window.
     const below = anchor.bottom + 280 < window.innerHeight
     const style: React.CSSProperties = {
@@ -140,11 +139,6 @@ export class RathenaCommandTooltip extends React.Component<
           </div>
         ))}
         {body !== '' && <div className="rathena-command-body">{body}</div>}
-        {lines.length > MaxBodyLines && (
-          <div className="rathena-command-more">
-            … more in doc/script_commands.txt
-          </div>
-        )}
       </div>
     )
   }
