@@ -16,6 +16,14 @@ import { PathText } from '../lib/path-text'
 import { Dispatcher } from '../dispatcher'
 import { EditableFileView } from '../editor/editable-file-view'
 import { hasDraft } from '../editor/file-editor'
+import { Button } from '../lib/button'
+import { Octicon } from '../octicons'
+import * as octicons from '../octicons/octicons.generated'
+import {
+  canStepFilesLocation,
+  recordFilesLocation,
+  stepFilesLocation,
+} from '../../lib/files-navigation'
 
 type FilesViewMode = 'file' | 'preview'
 const filesViewModes = (['file', 'preview'] as const).map(id => ({
@@ -49,6 +57,99 @@ export class FilesContent extends React.Component<
     this.state = { markdownPreview: getMarkdownPreview() }
   }
 
+  public componentDidMount() {
+    this.record()
+    // Mouse back/forward buttons and Alt+Left/Right, like a browser.
+    window.addEventListener('mouseup', this.onMouseUp)
+    window.addEventListener('keydown', this.onKeyDown)
+  }
+
+  public componentDidUpdate(prevProps: IFilesContentProps) {
+    if (
+      prevProps.commitish !== this.props.commitish ||
+      prevProps.path !== this.props.path ||
+      prevProps.repository.hash !== this.props.repository.hash
+    ) {
+      this.record()
+    }
+  }
+
+  public componentWillUnmount() {
+    window.removeEventListener('mouseup', this.onMouseUp)
+    window.removeEventListener('keydown', this.onKeyDown)
+  }
+
+  private record() {
+    const { repository, commitish, path } = this.props
+    recordFilesLocation(repository.hash, { commitish, path })
+    // Back/Forward were drawn before this entry existed.
+    this.forceUpdate()
+  }
+
+  private step(step: -1 | 1) {
+    const { repository, dispatcher } = this.props
+    const target = stepFilesLocation(repository.hash, step)
+    if (target !== null) {
+      dispatcher.browseFiles(repository, target.commitish, target.path)
+    }
+  }
+
+  private onBack = () => this.step(-1)
+  private onForward = () => this.step(1)
+
+  private onMouseUp = (event: MouseEvent) => {
+    if (event.button === 3 || event.button === 4) {
+      event.preventDefault()
+      this.step(event.button === 3 ? -1 : 1)
+    }
+  }
+
+  private onKeyDown = (event: KeyboardEvent) => {
+    const arrow =
+      event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : null
+    // Alt+arrows inside a text field or the editor are theirs.
+    const target = event.target as HTMLElement | null
+    const typing =
+      target !== null &&
+      (target.isContentEditable || /^(INPUT|TEXTAREA)$/.test(target.tagName))
+    if (
+      arrow !== null &&
+      event.altKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !typing
+    ) {
+      event.preventDefault()
+      this.step(arrow)
+    }
+  }
+
+  private renderNavigation() {
+    const key = this.props.repository.hash
+    return (
+      <div className="files-navigation">
+        <Button
+          size="small"
+          onClick={this.onBack}
+          disabled={!canStepFilesLocation(key, -1)}
+          tooltip="Back (Alt+Left, mouse back button)"
+          ariaLabel="Back"
+        >
+          <Octicon symbol={octicons.arrowLeft} />
+        </Button>
+        <Button
+          size="small"
+          onClick={this.onForward}
+          disabled={!canStepFilesLocation(key, 1)}
+          tooltip="Forward (Alt+Right, mouse forward button)"
+          ariaLabel="Forward"
+        >
+          <Octicon symbol={octicons.arrowRight} />
+        </Button>
+      </div>
+    )
+  }
+
   public render() {
     const { repository, commitish, path, reloadKey } = this.props
     if (path === null) {
@@ -70,6 +171,7 @@ export class FilesContent extends React.Component<
     return (
       <div className="files-content">
         <div className="files-content-header">
+          {this.renderNavigation()}
           <PathText path={path} />
           <SyntaxSelect repositoryPath={repository.path} path={path} />
           {markdown && (

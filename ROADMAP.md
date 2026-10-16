@@ -47,6 +47,8 @@ notes are in `AGENTS.md`.
        - [x] **Files** tab (Ctrl+3): working-directory tree with fuzzy find.
        - [x] Right Click a commit → Browse files at this commit.
        - [x] Right Click in the tree: reveal, open, copy path, history, View on GitHub.
+       - [x] Back/Forward between visited files and commits: ← → in the header, mouse
+             side buttons, Alt+Left/Right (`lib/files-navigation.ts`).
        - [ ] Image files (binary files only say "not shown" today).
 8. [ ] **Markdown preview** like github.com.
        - [x] Preview/Diff button on `.md` diffs (Changes and History), remembering the last

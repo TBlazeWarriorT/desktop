@@ -321,6 +321,9 @@ on that file; type in the box to search within them; click the file chip to go b
 - Right Click a file in the tree: Show in Explorer, Open in editor, Copy path,
   Show history, View on GitHub. At an old commit the open ones say
   "(current version)". On a folder, Show history lists the commits under it.
+- Back/Forward: open a few files (and a commit via Browse files), then ← → in the
+  header, the mouse side buttons or Alt+Left/Right walk back and forth; opening a new
+  file after going back drops the forward ones.
 - Edit: File mode in Changes, or a file in the Files tab (working directory only),
   has an Edit button. Change \`npc/custom/healer.txt\` and switch files: coming back
   reopens the editor with the edits. Save (or Ctrl+S) keeps its line endings; the

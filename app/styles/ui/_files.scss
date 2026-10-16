@@ -95,3 +95,15 @@
     }
   }
 }
+
+// Back / Forward in the Files tab header (app/src/ui/files/files-content.tsx).
+.files-content-header .files-navigation {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--spacing-third);
+  margin-right: var(--spacing-half);
+
+  .button-component {
+    padding: 0 var(--spacing-third);
+  }
+}
