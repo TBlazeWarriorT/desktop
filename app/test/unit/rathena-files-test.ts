@@ -102,6 +102,25 @@ describe('batch files and VS solutions', () => {
   })
 })
 
+describe('PowerShell', () => {
+  it('colors any approved-verb cmdlet and -Parameter names', async () => {
+    await import('codemirror/mode/powershell/powershell')
+    const out = tokens(
+      [
+        'New-Item -Path $x -Force',
+        'Install-Module Foo',
+        'Frobnicate-Thing',
+      ].join('\n'),
+      'powershell-plus'
+    )
+    assert.equal(styleOf(out, 'New-Item'), 'builtin')
+    assert.equal(styleOf(out, 'Install-Module'), 'builtin')
+    assert.equal(styleOf(out, 'Path'), 'attribute')
+    assert.equal(styleOf(out, 'Force'), 'attribute')
+    assert.equal(styleOf(out, 'Frobnicate-Thing'), 'identifier')
+  })
+})
+
 describe('rathena command reference', () => {
   const doc = [
     '//===== rAthena Documentation',

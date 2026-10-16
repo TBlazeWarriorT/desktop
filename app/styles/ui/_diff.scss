@@ -753,6 +753,16 @@
     }
   }
 
+  // Cmdlets (New-Item) and -Parameters (powershell-plus, extra-modes.ts).
+  .cm-m-powershell {
+    &.cm-builtin {
+      color: var(--syntax-atom-color);
+    }
+    &.cm-attribute {
+      color: var(--syntax-alt-variable-color);
+    }
+  }
+
   .cm-m-javascript {
     &.cm-type {
       color: var(--syntax-variable-color);

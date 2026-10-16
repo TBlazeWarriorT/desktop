@@ -29,7 +29,7 @@ export const otherSyntaxChoices: ReadonlyArray<ISyntaxChoice> = [
   { id: 'application/json', label: 'JSON' },
   { id: 'text/x-lua', label: 'Lua' },
   { id: 'text/x-markdown', label: 'Markdown' },
-  { id: 'application/x-powershell', label: 'PowerShell' },
+  { id: 'text/x-powershell-plus', label: 'PowerShell' },
   { id: 'text/x-python', label: 'Python' },
   { id: 'text/x-sh', label: 'Shell' },
   { id: 'text/x-sql', label: 'SQL' },

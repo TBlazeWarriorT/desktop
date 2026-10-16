@@ -3,6 +3,7 @@
 import {
   defineMode,
   defineMIME,
+  getMode,
 } from 'codemirror/addon/runmode/runmode.node.js'
 
 // Modes CodeMirror 5 doesn't ship: Windows batch files and Visual Studio
@@ -124,3 +125,50 @@ defineMode('vs-solution', () => ({
   },
 }))
 defineMIME('text/x-vs-solution', 'vs-solution')
+
+// PowerShell's approved verbs (Get-Verb). Any Verb-Noun with one of them is a
+// cmdlet, whatever module it comes from.
+const powershellVerbs = (
+  'Add Approve Assert Backup Block Build Checkpoint Clear Close Compare ' +
+  'Complete Compress Confirm Connect Convert ConvertFrom ConvertTo Copy Debug ' +
+  'Deny Deploy Disable Disconnect Dismount Edit Enable Enter Exit Expand ' +
+  'Export Find Format Get Grant Group Hide Import Initialize Install Invoke ' +
+  'Join Limit Lock Measure Merge Mount Move New Open Optimize Out Ping Pop ' +
+  'Protect Publish Push Read Receive Redo Register Remove Rename Repair ' +
+  'Request Reset Resize Resolve Restart Restore Resume Revoke Save Search ' +
+  'Select Send Set Show Skip Split Start Step Stop Submit Suspend Switch Sync ' +
+  'Test Trace Unblock Undo Uninstall Unlock Unprotect Unpublish Unregister ' +
+  'Update Use Wait Watch Write'
+).split(' ')
+const cmdletRe = new RegExp(
+  '^(' + powershellVerbs.join('|') + ')-[A-Za-z][A-Za-z0-9_]*$',
+  'i'
+)
+
+/**
+ * CodeMirror's PowerShell mode, plus: cmdlets it doesn't list (by approved
+ * verb) and `-Parameter` names as one token instead of `-` and a word.
+ */
+defineMode('powershell-plus', config => {
+  const powershell = getMode(config, 'powershell')
+  return {
+    ...powershell,
+    name: 'powershell',
+    token(stream, state) {
+      const style = powershell.token(stream, state)
+      if (style !== 'identifier') {
+        return style
+      }
+      const text = stream.current()
+      if (cmdletRe.test(text)) {
+        return 'builtin'
+      }
+      const before = stream.string.slice(0, stream.start)
+      if (/(^|\s)-$/.test(before)) {
+        return 'attribute'
+      }
+      return style
+    },
+  }
+})
+defineMIME('text/x-powershell-plus', 'powershell-plus')

@@ -267,11 +267,15 @@ const extensionModes: ReadonlyArray<IModeDefinition> = [
     },
   },
   {
-    install: () => import('codemirror/mode/powershell/powershell'),
+    // CodeMirror's mode plus any approved-verb cmdlet (extra-modes.ts).
+    install: async () => {
+      await import('codemirror/mode/powershell/powershell')
+      await import('./extra-modes')
+    },
     mappings: {
-      '.ps1': 'application/x-powershell',
-      '.psm1': 'application/x-powershell',
-      '.psd1': 'application/x-powershell',
+      '.ps1': 'text/x-powershell-plus',
+      '.psm1': 'text/x-powershell-plus',
+      '.psd1': 'text/x-powershell-plus',
     },
   },
   // Not in CodeMirror 5; written for this fork.
