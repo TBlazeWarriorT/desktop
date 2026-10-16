@@ -678,12 +678,14 @@
   .cm-atom {
     color: var(--syntax-atom-color);
   }
+  // Upstream left numbers, definitions and builtins plain (github.com's old
+  // look); this fork colors them, like most editors.
   .cm-number {
-    color: inherit;
+    color: var(--syntax-atom-color);
   }
 
   .cm-def {
-    color: inherit;
+    color: var(--syntax-variable-color);
   }
 
   .cm-quote {
@@ -698,13 +700,10 @@
   .cm-meta {
     color: var(--syntax-comment-color);
   }
+  // Quoted keys ('a.rsw': ...) stay strings, as in other editors.
   .cm-string,
   .cm-string-2 {
     color: var(--syntax-string-color);
-
-    &.cm-property {
-      color: inherit;
-    }
   }
   .cm-qualifier {
     color: var(--syntax-qualifier-color);
@@ -713,7 +712,7 @@
     color: var(--syntax-type-color);
   }
   .cm-builtin {
-    color: inherit;
+    color: var(--syntax-atom-color);
   }
   .cm-bracket {
     color: inherit;
