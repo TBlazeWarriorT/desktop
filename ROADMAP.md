@@ -105,6 +105,8 @@ notes are in `AGENTS.md`.
       shows its `doc/script_commands.txt` entry from the active source
       (`lib/rathena/command-docs.ts`).
 - [ ] Flag unknown commands and `callfunc "F_X"` targets that don't exist.
+- [ ] Maybe: autocomplete of commands (and constants, labels, `callfunc` targets) in the
+      editor, from the active source; its docs entry alongside, as in the tooltip.
 
 ## Known issues
 
