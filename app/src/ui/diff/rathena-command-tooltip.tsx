@@ -2,6 +2,8 @@ import * as React from 'react'
 import { ICommandDoc, getCommandDocs } from '../../lib/rathena/command-docs'
 
 const ShowDelayMs = 450
+// Time to move the mouse from the command into the tooltip (or back).
+const HideDelayMs = 300
 
 interface IRathenaCommandTooltipProps {
   readonly repositoryPath: string
@@ -27,6 +29,7 @@ export class RathenaCommandTooltip extends React.Component<
 > {
   private target: Element | null = null
   private timer: number | null = null
+  private hideTimer: number | null = null
   private tooltip: HTMLDivElement | null = null
 
   public constructor(props: IRathenaCommandTooltipProps) {
@@ -63,28 +66,49 @@ export class RathenaCommandTooltip extends React.Component<
       return
     }
     this.cancel()
+    this.cancelHide()
     this.target = null
     if (this.state.shown !== null) {
       this.setState({ shown: null })
     }
   }
 
+  private cancelHide() {
+    if (this.hideTimer !== null) {
+      window.clearTimeout(this.hideTimer)
+      this.hideTimer = null
+    }
+  }
+
+  /** Leaving the command or the tooltip: gone unless the mouse comes back. */
+  private scheduleHide() {
+    if (this.state.shown === null) {
+      this.hide()
+    } else if (this.hideTimer === null) {
+      this.hideTimer = window.setTimeout(this.hide, HideDelayMs)
+    }
+  }
+
   private onMouseOver = (event: MouseEvent) => {
     const element = event.target instanceof Element ? event.target : null
     if (element !== null && this.tooltip?.contains(element)) {
+      this.cancelHide()
       return
     }
     // Script commands only; the reference's own `*command` lines are skipped.
     const target = element?.closest(
       '.cm-m-rathena.cm-rathena-command:not(.cm-rathena-doc-command)'
     )
-    if (target === this.target) {
+    if (target !== null && target !== undefined && target === this.target) {
+      this.cancelHide()
+      return
+    }
+    if (target === null || target === undefined) {
+      // Crossing other text on the way to the tooltip doesn't close it.
+      this.scheduleHide()
       return
     }
     this.hide()
-    if (target === null || target === undefined) {
-      return
-    }
     this.target = target
     this.timer = window.setTimeout(() => this.show(target), ShowDelayMs)
   }
@@ -105,7 +129,7 @@ export class RathenaCommandTooltip extends React.Component<
   }
 
   private onTooltipMouseLeave = () => {
-    this.hide()
+    this.scheduleHide()
   }
 
   public render() {
@@ -121,8 +145,8 @@ export class RathenaCommandTooltip extends React.Component<
     const style: React.CSSProperties = {
       left: Math.max(8, Math.min(anchor.left, window.innerWidth - 560)),
       ...(below
-        ? { top: anchor.bottom + 1 }
-        : { bottom: window.innerHeight - anchor.top + 1 }),
+        ? { top: anchor.bottom - 1 }
+        : { bottom: window.innerHeight - anchor.top - 1 }),
     }
 
     return (
