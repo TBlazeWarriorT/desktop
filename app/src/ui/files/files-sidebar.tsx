@@ -43,19 +43,23 @@ interface IFileRowProps {
   readonly row: IRow
   readonly icon: typeof octicons.file
   readonly selected: boolean
+  /** The keyboard cursor, e.g. on a folder (files show it as selected). */
+  readonly cursor: boolean
   readonly onClick: (row: IRow) => void
   readonly onContextMenu: (row: IRow) => void
 }
 
 class FileRow extends React.Component<IFileRowProps> {
   public render() {
-    const { row, icon, selected } = this.props
+    const { row, icon, selected, cursor } = this.props
     return (
       <button
         className={classNames('files-row', {
           selected,
+          cursor,
           folder: row.isFolder,
         })}
+        tabIndex={-1}
         style={{ paddingLeft: `${8 + row.depth * 16}px` }}
         onClick={this.onClick}
         onContextMenu={this.onContextMenu}
@@ -87,6 +91,10 @@ interface IFilesSidebarState {
   readonly query: string
   readonly expanded: ReadonlySet<string>
   readonly loading: boolean
+  /** Path of the row the arrow keys are on; null follows the open file. */
+  readonly cursor: string | null
+  /** Row to keep in view after a keyboard move. */
+  readonly scrollToIndex: number | undefined
 }
 
 /** Search and folder tree of every file, at a commit or on disk. */
@@ -95,6 +103,7 @@ export class FilesSidebar extends React.Component<
   IFilesSidebarState
 > {
   private loadId = 0
+  private list: HTMLDivElement | null = null
 
   // Each visible row asks for the rows, and a fuzzy match over thousands of
   // paths is slow: compute once per change of paths, query or open folders.
@@ -124,6 +133,8 @@ export class FilesSidebar extends React.Component<
       query: '',
       expanded: parentFolders(props.selectedPath),
       loading: true,
+      cursor: null,
+      scrollToIndex: undefined,
     }
   }
 
@@ -139,6 +150,14 @@ export class FilesSidebar extends React.Component<
       (commitish === null && prevProps.reloadKey !== reloadKey)
     ) {
       this.load()
+    }
+    // The cursor follows the open file when it changes (also from elsewhere).
+    if (
+      prevProps.selectedPath !== selectedPath &&
+      this.state.cursor !== null &&
+      this.state.cursor !== selectedPath
+    ) {
+      this.setState({ cursor: null })
     }
     // Opened on a file from elsewhere: show it in the tree.
     if (prevProps.selectedPath !== selectedPath && selectedPath !== null) {
@@ -180,10 +199,11 @@ export class FilesSidebar extends React.Component<
             value={this.state.query}
             onValueChanged={this.onQueryChanged}
             onSearchCleared={this.onSearchCleared}
+            onKeyDown={this.onSearchKeyDown}
             onRef={noop}
           />
         </div>
-        <div className="files-list">
+        <div className="files-list" ref={this.onListRef} tabIndex={-1}>
           {rows.length === 0 ? (
             <div className="files-empty">
               {this.state.loading ? 'Loading…' : 'No files'}
@@ -197,9 +217,11 @@ export class FilesSidebar extends React.Component<
                   rowCount={rows.length}
                   rowHeight={RowHeight}
                   rowRenderer={this.renderRow}
+                  scrollToIndex={this.state.scrollToIndex}
                   // Passed only so the list re-renders when they change.
                   rows={rows}
                   selectedPath={this.props.selectedPath}
+                  cursor={this.state.cursor}
                 />
               )}
             </AutoSizer>
@@ -248,6 +270,7 @@ export class FilesSidebar extends React.Component<
       return null
     }
     const selected = !row.isFolder && row.path === this.props.selectedPath
+    const cursor = row.path === this.cursorPath
     const icon = row.isFolder
       ? this.state.expanded.has(row.path)
         ? octicons.chevronDown
@@ -259,6 +282,7 @@ export class FilesSidebar extends React.Component<
           row={row}
           icon={icon}
           selected={selected}
+          cursor={cursor}
           onClick={this.onRowClicked}
           onContextMenu={this.onRowContextMenu}
         />
@@ -267,6 +291,8 @@ export class FilesSidebar extends React.Component<
   }
 
   private onRowClicked = (row: IRow) => {
+    this.setState({ cursor: row.path })
+    this.list?.focus({ preventScroll: true })
     if (row.isFolder) {
       const expanded = new Set(this.state.expanded)
       if (!expanded.delete(row.path)) {
@@ -303,6 +329,107 @@ export class FilesSidebar extends React.Component<
 
   private onQueryChanged = (query: string) => {
     this.setState({ query })
+  }
+
+  /** ↓ from the search box goes into the results. */
+  private onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown' && this.getRows().length > 0) {
+      event.preventDefault()
+      this.moveTo(0)
+    }
+  }
+
+  private onListRef = (list: HTMLDivElement | null) => {
+    this.list?.removeEventListener('keydown', this.onListKeyDown)
+    this.list = list
+    list?.addEventListener('keydown', this.onListKeyDown)
+  }
+
+  private get cursorPath() {
+    return this.state.cursor ?? this.props.selectedPath
+  }
+
+  /** Puts the cursor on a row, opening it when it's a file. */
+  private moveTo(index: number) {
+    const rows = this.getRows()
+    const row = rows[Math.max(0, Math.min(index, rows.length - 1))]
+    if (row === undefined) {
+      return
+    }
+    this.setState({ cursor: row.path, scrollToIndex: rows.indexOf(row) })
+    this.list?.focus({ preventScroll: true })
+    if (!row.isFolder) {
+      this.props.dispatcher.browseFiles(
+        this.props.repository,
+        undefined,
+        row.path
+      )
+    }
+  }
+
+  private setExpanded(path: string, open: boolean) {
+    const expanded = new Set(this.state.expanded)
+    if (open) {
+      expanded.add(path)
+    } else {
+      expanded.delete(path)
+    }
+    this.setState({ expanded })
+  }
+
+  /** Tree keys: ↑↓ move (files open), → opens or enters, ← closes or leaves. */
+  private onListKeyDown = (event: KeyboardEvent) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) {
+      return
+    }
+    const rows = this.getRows()
+    const index = rows.findIndex(r => r.path === this.cursorPath)
+    const row = rows[index]
+    const open = row?.isFolder === true && this.state.expanded.has(row.path)
+    switch (event.key) {
+      case 'ArrowDown':
+        this.moveTo(index + 1)
+        break
+      case 'ArrowUp':
+        this.moveTo(index === -1 ? 0 : index - 1)
+        break
+      case 'Home':
+        this.moveTo(0)
+        break
+      case 'End':
+        this.moveTo(rows.length - 1)
+        break
+      case 'ArrowRight':
+        if (row?.isFolder && !open) {
+          this.setExpanded(row.path, true)
+        } else if (open) {
+          this.moveTo(index + 1)
+        }
+        break
+      case 'ArrowLeft':
+        if (open) {
+          this.setExpanded(row.path, false)
+        } else if (row !== undefined) {
+          const parent = Path.posix.dirname(row.path)
+          const parentIndex = rows.findIndex(
+            r => r.isFolder && r.path === parent
+          )
+          if (parentIndex !== -1) {
+            this.moveTo(parentIndex)
+          }
+        }
+        break
+      case 'Enter':
+        if (row?.isFolder) {
+          this.setExpanded(row.path, !open)
+        } else if (row !== undefined) {
+          this.moveTo(index)
+        }
+        break
+      default:
+        return
+    }
+    event.preventDefault()
   }
 
   private onSearchCleared = () => {

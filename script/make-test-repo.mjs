@@ -321,6 +321,8 @@ on that file; type in the box to search within them; click the file chip to go b
 - Right Click a file in the tree: Show in Explorer, Open in editor, Copy path,
   Show history, View on GitHub. At an old commit the open ones say
   "(current version)". On a folder, Show history lists the commits under it.
+- Keys in the tree: ↑↓ move and open files, → opens a folder (or enters it), ← closes
+  it (or goes to its parent), Enter toggles; ↓ in the search box goes into the results.
 - Back/Forward: open a few files (and a commit via Browse files), then ← → in the
   header, the mouse side buttons or Alt+Left/Right walk back and forth; opening a new
   file after going back drops the forward ones.
