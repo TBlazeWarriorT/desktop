@@ -45,9 +45,12 @@ keep it updated when something lands.
   `rathena.ts` holds the `rathena` and `rathena-yaml` modes. The worker cannot read the
   disk, so `app/src/lib/rathena/context.ts` (renderer) resolves each repository's
   context and passes it in the highlight request.
-- Detection is deliberately strict: only in a repo with `npc/`, only `.txt`/`.cpp` under
-  `npc/` that contain an NPC header line, or `.yml` with `*Script: |`/`>` blocks. The
-  team names scripts `.cpp`. Files in `doc/` must never be detected.
+- Detection is deliberately strict, and only in a repo with `npc/`: scripts are `.txt`/
+  `.cpp` under `npc/` or `doc/sample/` that contain an NPC header line (the team names
+  scripts `.cpp`); `.yml` with `*Script: |`/`>` blocks; `.conf` files (`rathena-conf`);
+  and `doc/*.txt` with at least ten `*command` entries, like `script_commands.txt`
+  (`rathena-doc`, tab-indented examples as script). The rest of `doc/` stays plain.
+  These modes are in `rathena-files.ts`, which also draws tabs as arrows.
 - Commands and constants come from the repo's server source, found via `.rathena.json`
   `source`, the repo itself, or the `map-server.exe` symlink (how
   Gear-Mechanica-Server-Ferrus points to Gear-Mechanica-Server). A found source

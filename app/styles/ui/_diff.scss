@@ -765,7 +765,10 @@
     }
   }
 
-  .cm-m-rathena {
+  // Scripts, .conf files and the command reference share the colors.
+  .cm-m-rathena,
+  .cm-m-rathena-conf,
+  .cm-m-rathena-doc {
     &.cm-rathena-command,
     &.cm-rathena-keyword,
     &.cm-rathena-header-type {
@@ -826,6 +829,28 @@
     // Background and text color are set inline from the code itself.
     &.cm-rathena-color {
       border-radius: 2px;
+    }
+    // The command reference: `*command` entries and section titles.
+    &.cm-rathena-doc-command {
+      font-weight: 600;
+    }
+    &.cm-header {
+      color: var(--rathena-npc-name-color);
+      font-weight: 600;
+    }
+  }
+
+  // Tabs are syntax in rAthena files: a faint arrow, like Notepad++. The arrow
+  // is a pseudo-element, so copying still gives the tab.
+  .cm-rathena-tab {
+    position: relative;
+
+    &::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      opacity: 0.3;
+      pointer-events: none;
     }
   }
 

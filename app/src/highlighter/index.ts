@@ -15,6 +15,7 @@ import {
   hasEmbeddedScripts,
   IRathenaModeOptions,
 } from './rathena'
+import { looksLikeCommandDoc, markTabs } from './rathena-files'
 
 /**
  * A mode definition object is used to map a certain file
@@ -543,21 +544,33 @@ function guessMimeType(contents: ReadonlyArray<string>) {
 const rathenaExtensions = new Set(['.txt', '.cpp'])
 
 /**
- * 'rathena' for scripts inside an rAthena repository's npc/ folder (never e.g.
- * doc/), 'rathena-yaml' for its db YAML with embedded scripts.
+ * In an rAthena repository: 'rathena' for scripts in npc/ and doc/sample/
+ * (never the rest of doc/), 'rathena-yaml' for db YAML with embedded scripts,
+ * 'rathena-conf' for .conf files and 'rathena-doc' for the command reference.
  */
 function getRathenaModeName(request: IHighlightRequest) {
-  const { rathena, path } = request
+  const { rathena } = request
   const ext = request.extension.toLowerCase()
-  if (rathena === undefined || path === undefined) {
+  if (rathena === undefined || request.path === undefined) {
     return null
   }
+  const path = request.path.replace(/\\/g, '/')
   if (
-    /^npc\//i.test(path.replace(/\\/g, '/')) &&
+    /^(npc|doc\/sample)\//i.test(path) &&
     rathenaExtensions.has(ext) &&
     looksLikeRathenaScript(request.contentLines)
   ) {
     return 'rathena'
+  }
+  if (ext === '.conf') {
+    return 'rathena-conf'
+  }
+  if (
+    /^doc\//i.test(path) &&
+    ext === '.txt' &&
+    looksLikeCommandDoc(request.contentLines)
+  ) {
+    return 'rathena-doc'
   }
   if (
     (ext === '.yml' || ext === '.yaml') &&
@@ -692,6 +705,8 @@ onmessage = async (ev: MessageEvent<IHighlightRequest>) => {
   const state: any = mode.startState ? mode.startState() : null
 
   const tokens: ITokens = {}
+  // Tabs are syntax in rAthena files: drawn as arrows (see markTabs).
+  const showTabs = getModeName(mode)?.startsWith('rathena') === true
 
   for (const [ix, line] of lines.entries()) {
     // No need to continue after the max line
@@ -734,6 +749,13 @@ onmessage = async (ev: MessageEvent<IHighlightRequest>) => {
       }
 
       lineStream.start = lineStream.pos
+    }
+
+    if (showTabs && (!lineFilter || lineFilter.has(ix))) {
+      const marked = markTabs(line, tokens[ix])
+      if (marked !== undefined) {
+        tokens[ix] = marked
+      }
     }
   }
 

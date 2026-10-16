@@ -1,0 +1,115 @@
+import { describe, it } from 'node:test'
+import assert from 'node:assert'
+import { runMode } from 'codemirror/addon/runmode/runmode.node.js'
+import '../../src/highlighter/rathena'
+import {
+  looksLikeCommandDoc,
+  markTabs,
+} from '../../src/highlighter/rathena-files'
+import { IRathenaDefinitions } from '../../src/lib/rathena/types'
+
+const definitions: IRathenaDefinitions = {
+  source: 'test',
+  commands: { mes: 'v*', close: '' },
+  deprecatedCommands: [],
+  constants: [],
+  parameters: [],
+  deprecatedConstants: [],
+}
+
+/** [text, style] pairs of a mode's output, skipping unstyled tokens. */
+function tokens(text: string, name: string) {
+  const out = new Array<[string, string]>()
+  runMode(text, { name, definitions }, (t, style) => {
+    if (style) {
+      out.push([t, style])
+    }
+  })
+  return out
+}
+
+const styleOf = (out: ReadonlyArray<[string, string]>, text: string) =>
+  out.find(([t]) => t === text)?.[1]
+
+describe('rathena .conf files', () => {
+  it('colors keys, directives, values and comments', () => {
+    const out = tokens(
+      [
+        '// Players maximum HP rate',
+        'hp_rate: 100',
+        'left_cardfix_to_right: yes',
+        'npc: npc/functions/travel.cpp',
+        'server_name: "Gear"  // inline',
+      ].join('\n'),
+      'rathena-conf'
+    )
+    assert.equal(styleOf(out, '// Players maximum HP rate'), 'comment')
+    assert.equal(styleOf(out, 'hp_rate'), 'rathena-function')
+    assert.equal(styleOf(out, '100'), 'number')
+    assert.equal(styleOf(out, 'yes'), 'rathena-bool')
+    assert.equal(styleOf(out, 'npc'), 'keyword rathena-keyword')
+    assert.equal(styleOf(out, '"Gear"'), 'string')
+    assert.equal(styleOf(out, '// inline'), 'comment')
+  })
+})
+
+describe('rathena command reference', () => {
+  const doc = [
+    '//===== rAthena Documentation',
+    '|1.- Basic commands.|',
+    '=====================',
+    '',
+    '*mes "<string>"{,"<string>"{,...}};',
+    '',
+    'Displays up to 2 lines.',
+    '',
+    '\tmes "Hello";',
+    '\tclose;',
+    '',
+    '** Set a map flag:',
+  ]
+
+  it('detects it by its *command entries', () => {
+    const entries = Array.from({ length: 10 }, (_, i) => `*cmd${i};`)
+    assert.ok(looksLikeCommandDoc(['intro', ...entries]))
+    assert.ok(!looksLikeCommandDoc(['notes', '*one', '*two']))
+  })
+
+  it('colors entries, titles and highlights tab-indented examples', () => {
+    const out = tokens(doc.join('\n'), 'rathena-doc')
+    assert.equal(styleOf(out, '*mes'), 'rathena-command rathena-doc-command')
+    assert.equal(styleOf(out, '<string>'), undefined) // inside a string
+    assert.equal(styleOf(out, '|1.- Basic commands.|'), 'header')
+    assert.equal(styleOf(out, '** Set a map flag:'), 'header')
+    assert.equal(styleOf(out, '2'), 'number')
+    // The example lines are script: commands and strings colored as such.
+    assert.deepEqual(
+      out.filter(([t]) => t === 'mes').map(([, s]) => s),
+      ['rathena-command']
+    )
+    assert.equal(styleOf(out, 'close'), 'rathena-command')
+  })
+})
+
+describe('markTabs', () => {
+  it('gives every tab its own token, keeping the style around it', () => {
+    const line = '\tmes\t"a\tb";'
+    const marked = markTabs(line, {
+      1: { length: 3, token: 'rathena-command' },
+      5: { length: 5, token: 'string' },
+    })
+    assert.deepEqual(marked, {
+      0: { length: 1, token: 'rathena-tab' },
+      1: { length: 3, token: 'rathena-command' },
+      4: { length: 1, token: 'rathena-tab' },
+      5: { length: 2, token: 'string' },
+      7: { length: 1, token: 'string rathena-tab' },
+      8: { length: 2, token: 'string' },
+    })
+  })
+
+  it('leaves lines without tabs alone', () => {
+    const tokens = { 0: { length: 3, token: 'number' } }
+    assert.equal(markTabs('123', tokens), tokens)
+  })
+})

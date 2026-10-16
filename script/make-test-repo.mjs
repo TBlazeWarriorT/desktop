@@ -238,7 +238,13 @@ and nothing reaches GitHub.
   their own background, \`!TODO\`/\`!CHECKME\` comments, \`callfunc "F_Bless"\`
   (known function), \`getvariableofinstance\` (deprecated), \`1@begi\` in one color.
 - \`npc/custom/instances/begi.cpp\`: \`.cpp\` scripts are detected too.
-- \`doc/script_commands.txt\` and \`src/notes.txt\` must stay plain.
+- \`doc/sample/hello.txt\` is a script too (the rest of \`doc/\` is not).
+- \`doc/script_commands.txt\`: \`*command\` entries bold, \`|1.- Title|\` and \`** sub\`
+  headings, numbers, and the tab-indented examples colored as script.
+- \`conf/battle/player.conf\` and \`npc/scripts_custom.conf\`: keys, \`npc:\`/\`import:\`,
+  numbers, yes/no and comments.
+- Tabs show as faint arrows in every rAthena file (scripts, YAML scripts, conf, doc).
+- \`doc/notes.txt\` and \`src/notes.txt\` must stay plain.
 
 ## Markdown preview
 
@@ -396,12 +402,56 @@ commit('Initial commit', {
   'TESTING.md': testing,
   'docs/img/logo.svg': logo,
   'src/notes.txt': 'Plain text outside npc/: never highlighted.\nset .@x, 1;\n',
-  'doc/script_commands.txt': `
+  'doc/script_commands.txt': `//===== rAthena Documentation =====
+//= rAthena Script Commands
+
+|1.- Basic commands.|
+=====================
+---------------------------------------
+
 *mes "<string>"{,"<string>"{,...}};
-Never highlighted: doc/ is not script.
+
+Displays up to 2 lines in the dialog box.
+
+	mes "Hello, " + strcharinfo(0) + "!";
+	close;
+
+** Set a map flag:
+
+*cmd0 <value>;
+*cmd1 <value>;
+*cmd2 <value>;
+*cmd3 <value>;
+*cmd4 <value>;
+*cmd5 <value>;
+*cmd6 <value>;
+*cmd7 <value>;
+*cmd8 <value>;
+*cmd9 <value>;
+`,
+  'doc/notes.txt': `Plain doc text: not the command reference, not doc/sample.
 prontera,150,150,4	script	Example	4_F_KAFRA1,{
 	mes "hello";
 }
+`,
+  'doc/sample/hello.txt': `// A sample script: doc/sample is scripts.
+prontera,155,180,4	script	Sample Hello	4_F_KAFRA1,{
+	mes "[Hello]";
+	mes "A sample from doc/sample.";
+	close;
+}
+`,
+  'conf/battle/player.conf': `// Players' maximum HP rate? (Default is 100)
+hp_rate: 100
+
+// Whether cards of the left hand apply to the right hand (Note 1)
+left_cardfix_to_right: yes
+server_name: "Gear Mechanica"	// tab before the comment
+`,
+  'npc/scripts_custom.conf': `// Custom scripts ======================================
+npc: npc/custom/healer.txt
+import: npc/other/scripts_other.conf
+//delnpc: npc/custom/old.txt
 `,
 })
 commit('Add healer NPC', { 'npc/custom/healer.txt': healer(500) })

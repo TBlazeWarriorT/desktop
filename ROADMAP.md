@@ -91,6 +91,9 @@ notes are in `AGENTS.md`.
 
 - [x] Labels where they are used: after goto/callsub/jump_zero, menu's label slots,
       cmdothernpc's command and "Npc::OnEvent" strings (by position, not checked).
+- [x] `doc/sample/` scripts, `.conf` files (conf and npc), the command reference
+      (`script_commands.txt`, `mapflags.txt`...; examples as script), and tabs drawn as
+      arrows in every rAthena file.
 - [ ] **Override (phase 3):** a "Syntax" dropdown next to Diff Options (Auto / rAthena /
       rAthena YAML / Plain text / others), with "remember for this path in this repo" and
       showing the active source (e.g. "rAthena · Gear-Mechanica-Server · 753 cmds").
