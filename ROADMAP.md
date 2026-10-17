@@ -88,6 +88,13 @@ notes are in `AGENTS.md`.
         - [ ] Cherry-pick from a remote branch without checking it out (today, picking it
               in the dropdown creates a local branch and switches to it).
 12. [ ] **Reword and edit older commits**, not just the last one.
+13. [ ] **Patches:** create and apply, for what github.com's `.patch` URLs can't cover
+        (unpushed commits, repos outside GitHub, several commits at once).
+        - [ ] Right Click a commit > Save as patch…; with several selected, Save as
+              merged patch… (one squashed file) or Save as N patches… (picks a folder).
+        - [ ] Apply: drop a `.patch` on the window, or a menu entry to pick one;
+              `git am` (commits) or `git apply` (plain diff), with the same "Retry
+              ignoring whitespace" as cherry-pick when it doesn't apply cleanly.
 
 ## rAthena syntax
 
