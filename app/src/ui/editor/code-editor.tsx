@@ -21,9 +21,12 @@ import {
   defaultKeymap,
   history,
   historyKeymap,
-  indentWithTab,
+  indentLess,
+  insertTab,
   selectAll,
 } from '@codemirror/commands'
+import { indentUnit } from '@codemirror/language'
+import { detectIndentUnit } from '../../lib/indent-unit'
 import {
   SearchQuery,
   closeSearchPanel,
@@ -244,9 +247,13 @@ export class CodeEditor extends React.Component<
         highlightActiveLine(),
         highlightSelectionMatches(),
         search({ top: true, createPanel: hiddenSearchPanel }),
+        // Tab types a tab (indents selected lines), in the file's own unit:
+        // tabs are syntax in rAthena scripts.
+        EditorState.tabSize.of(4),
+        indentUnit.of(detectIndentUnit(this.props.text)),
         keymap.of([
           { key: 'Mod-s', run: this.save, preventDefault: true },
-          indentWithTab,
+          { key: 'Tab', run: insertTab, shift: indentLess },
           ...defaultKeymap,
           ...historyKeymap,
         ]),
