@@ -29,6 +29,7 @@ import { getAvatarUsersForCommit, IAvatarUser } from '../../models/avatar'
 import { formatDate } from '../../lib/format-date'
 import { Avatar } from '../lib/avatar'
 import { Octicon } from '../octicons'
+import { PatchMode } from './save-patch'
 import * as octicons from '../octicons/octicons.generated'
 
 export const RowHeight = 50
@@ -193,6 +194,11 @@ interface ICommitListProps {
   /** Search results: Show in history, for commits in the current branch. */
   readonly onShowInHistory?: (sha: string) => void
   readonly isInHistory?: (sha: string) => Promise<boolean>
+  /** Save as patch: the commits come oldest first. */
+  readonly onSavePatch?: (
+    commits: ReadonlyArray<Commit>,
+    mode: PatchMode
+  ) => void
 
   /** Commits that would conflict with main, and the tooltip explaining it. */
   readonly conflictWarnings?: ReadonlyMap<string, string>
@@ -932,7 +938,47 @@ export class CommitList extends React.Component<
       )
     }
 
+    items.push(...this.getSavePatchMenuItems())
+
     return items
+  }
+
+  /** Merge commits have no patch of their own, but count in a merged one. */
+  private getSavePatchMenuItems(): IMenuItem[] {
+    const { onSavePatch, commitSHAs } = this.props
+    if (onSavePatch === undefined) {
+      return []
+    }
+    const commits = [...this.selectedCommits].sort(
+      (a, b) => commitSHAs.indexOf(b.sha) - commitSHAs.indexOf(a.sha)
+    )
+    const hasMerge = commits.some(c => c.isMergeCommit)
+    const save = (mode: PatchMode) => () => onSavePatch(commits, mode)
+
+    if (commits.length === 1) {
+      return [
+        { type: 'separator' },
+        {
+          label: __DARWIN__ ? 'Save as Patch…' : 'Save as patch…',
+          action: save('single'),
+          enabled: !hasMerge,
+        },
+      ]
+    }
+    return [
+      { type: 'separator' },
+      {
+        label: __DARWIN__ ? 'Save as Merged Patch…' : 'Save as merged patch…',
+        action: save('merged'),
+      },
+      {
+        label: __DARWIN__
+          ? `Save as ${commits.length} Patches…`
+          : `Save as ${commits.length} patches…`,
+        action: save('separate'),
+        enabled: !hasMerge,
+      },
+    ]
   }
 
   private canCherryPick(): boolean {
@@ -1019,6 +1065,7 @@ export class CommitList extends React.Component<
         action: () => this.props.onKeyboardReorder?.(this.selectedCommits),
         enabled: this.canReorder(),
       },
+      ...this.getSavePatchMenuItems(),
     ]
   }
 

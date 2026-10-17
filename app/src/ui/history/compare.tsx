@@ -31,6 +31,7 @@ import { PopupType } from '../../models/popup'
 import { getUniqueCoauthorsAsAuthors } from '../../lib/unique-coauthors-as-authors'
 import { getSquashedCommitDescription } from '../../lib/squash/squashed-commit-description'
 import { doMergeCommitsExistAfterCommit } from '../../lib/git'
+import { PatchMode, savePatch } from './save-patch'
 import { KeyboardInsertionData } from '../lib/list'
 import { Account } from '../../models/account'
 import { Emoji } from '../../lib/emoji'
@@ -288,6 +289,11 @@ export class CompareSidebar extends React.Component<
     this.props.dispatcher.browseFiles(this.props.repository, sha)
   }
 
+  private onSavePatch = (commits: ReadonlyArray<Commit>, mode: PatchMode) => {
+    const { repository, dispatcher } = this.props
+    savePatch(repository, commits, mode).catch(e => dispatcher.postError(e))
+  }
+
   private isInHistory = (sha: string) =>
     isInCurrentHistory(this.props.repository, sha)
 
@@ -447,6 +453,7 @@ export class CompareSidebar extends React.Component<
         branchesRepository={search ? this.props.repository : undefined}
         conflictWarnings={this.state.conflictWarnings}
         onBrowseFiles={this.onBrowseFiles}
+        onSavePatch={this.onSavePatch}
         onShowInHistory={search ? this.onShowInHistory : undefined}
         isInHistory={search ? this.isInHistory : undefined}
       />

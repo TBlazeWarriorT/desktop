@@ -352,6 +352,15 @@ added). Open it: every \`origin/*\` branch is there, \`origin/main\` included, a
 clicking \`origin/main\` switches to \`main\` instead of failing. Typing a filter shows
 matches inside collapsed groups too.
 
+## Patches
+
+- Right Click a commit in History > Save as patch…: the save dialog suggests its
+  title (\`Add-item-db-with-scripts.patch\`); the file starts with \`From <sha>\`.
+- Ctrl+Click two commits that aren't adjacent > Save as merged patch…: one file
+  listing both, then a single diff with both changes and nothing from the commits
+  between them. Save as 2 patches… asks for a folder and writes \`0001-…\`, \`0002-…\`.
+- Both work on search results too. Merge commits only allow the merged patch.
+
 ## Branches and pulling without switching
 
 Open the branch dropdown: each branch shows ↓behind ↑ahead of \`origin\`.
